@@ -16,11 +16,8 @@ function AppNavbar() {
             <Nav.Link as={NavLink} to="/" end>
               Home
             </Nav.Link>
-            <Nav.Link as={NavLink} to="/about">
-              About
-            </Nav.Link>
-            <Nav.Link as={NavLink} to="/contact">
-              Contact
+            <Nav.Link as={NavLink} to="/bg-music">
+              Background Music
             </Nav.Link>
           </Nav>
         </Navbar.Collapse>

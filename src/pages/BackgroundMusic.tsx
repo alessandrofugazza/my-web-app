@@ -9,6 +9,9 @@ const videos = [
   { id: 'i1zqFpHhIJ4?si=gQ5_XxFsqJAqGSrj', title: 'Nier Replicant' },
   { id: 'K7Ay3hxZx3A?si=2-u_ZPL5AdHrMFnk', title: 'Axiom Verge' },
   { id: 'bq7a_ktfYck?si=gZFsXOsWNlkzugSj', title: 'Hyper Light Drifter' },
+  { id: 'YnVynk4hllU?si=yYIMmTchemxqoaJz', title: 'Fallout: New Vegas' },
+  { id: 'S8JlQV_y4Hc?si=5UBidu57xt6nd98A', title: 'Fallout 3' },
+  { id: 'CNEW2udsaTc?si=lJU85ZAptm10VNIn', title: 'Silent Hill' },
 ]
 
 function BackgroundMusic() {
