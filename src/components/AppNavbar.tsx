@@ -5,7 +5,7 @@ import { NavLink } from 'react-router-dom'
 
 function AppNavbar() {
   return (
-    <Navbar bg="dark" data-bs-theme="dark" expand="lg" className="mb-4">
+    <Navbar bg="body-tertiary" expand="lg" className="mb-4">
       <Container>
         <Navbar.Brand as={NavLink} to="/">
           My Web App
