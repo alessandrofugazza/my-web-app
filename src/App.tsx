@@ -1,13 +1,21 @@
 import './App.css'
 
-import Button from 'react-bootstrap/Button'
+import { Route, Routes } from 'react-router-dom'
+
+import AppNavbar from './components/AppNavbar'
+import About from './pages/About'
+import Contact from './pages/Contact'
+import Home from './pages/Home'
 
 function App() {
   return (
     <div>
-      <h1>My Frontend</h1>
-      <p>React is working.</p>
-      <Button variant="primary">Click Me</Button>
+      <AppNavbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+      </Routes>
     </div>
   )
 }
