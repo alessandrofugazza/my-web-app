@@ -19,6 +19,9 @@ function AppNavbar() {
             <Nav.Link as={NavLink} to="/bg-music">
               Background Music
             </Nav.Link>
+            <Nav.Link as={NavLink} to="/supabase">
+              Supabase Test
+            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
