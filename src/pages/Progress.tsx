@@ -4,6 +4,7 @@ import Button from 'react-bootstrap/Button'
 import Card from 'react-bootstrap/Card'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
+import ProgressBar from 'react-bootstrap/ProgressBar'
 import Row from 'react-bootstrap/Row'
 import Spinner from 'react-bootstrap/Spinner'
 import Badge from 'react-bootstrap/Badge'
@@ -14,6 +15,54 @@ export interface ReadingProgress {
   starting_page: number
   current_page: number
   yesterday_progress: number
+  total_pages?: number | null
+}
+
+interface OverallProgressCardProps {
+  currentPage: number
+  totalPages: number
+}
+
+export function OverallProgressCard({ currentPage, totalPages }: OverallProgressCardProps) {
+  const percentage = totalPages > 0 ? Math.min(100, Math.max(0, (currentPage / totalPages) * 100)) : 0
+  const roundedPercentage = percentage.toFixed(1)
+
+  return (
+    <Card className="h-100 shadow-sm border-secondary">
+      <Card.Body className="d-flex flex-column justify-content-center p-4">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <Card.Subtitle className="text-secondary text-uppercase mb-0" style={{ letterSpacing: '1px' }}>
+            Book Progress
+          </Card.Subtitle>
+          <span className="fw-bold text-info fs-5">{roundedPercentage}%</span>
+        </div>
+
+        <ProgressBar
+          now={percentage}
+          variant="info"
+          animated={percentage > 0 && percentage < 100}
+          style={{ height: '1.25rem' }}
+          className="my-2"
+        />
+
+        <div className="d-flex justify-content-between text-secondary mt-1 small">
+          <span>
+            Page <strong className="text-light">{currentPage}</strong> of{' '}
+            <strong className="text-light">{totalPages || 0}</strong>
+          </span>
+          <span>
+            {totalPages > 0 && currentPage >= totalPages ? (
+              <Badge bg="success">Completed!</Badge>
+            ) : totalPages > 0 ? (
+              `${Math.max(0, totalPages - currentPage)} pages remaining`
+            ) : (
+              'Set total pages below'
+            )}
+          </span>
+        </div>
+      </Card.Body>
+    </Card>
+  )
 }
 
 interface TodayProgressCardProps {
@@ -96,6 +145,7 @@ function Progress() {
   const [startingPage, setStartingPage] = useState<number | ''>('')
   const [currentPage, setCurrentPage] = useState<number | ''>('')
   const [yesterdayProgress, setYesterdayProgress] = useState<number | ''>('')
+  const [totalPages, setTotalPages] = useState<number | ''>('')
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -112,10 +162,12 @@ function Progress() {
       setStartingPage(data.starting_page ?? 0)
       setCurrentPage(data.current_page ?? 0)
       setYesterdayProgress(data.yesterday_progress ?? 0)
+      setTotalPages(data.total_pages ?? 0)
     } else {
       setStartingPage(0)
       setCurrentPage(0)
       setYesterdayProgress(0)
+      setTotalPages(0)
     }
 
     setLoading(false)
@@ -136,10 +188,12 @@ function Progress() {
         setStartingPage(data.starting_page ?? 0)
         setCurrentPage(data.current_page ?? 0)
         setYesterdayProgress(data.yesterday_progress ?? 0)
+        setTotalPages(data.total_pages ?? 0)
       } else {
         setStartingPage(0)
         setCurrentPage(0)
         setYesterdayProgress(0)
+        setTotalPages(0)
       }
 
       setLoading(false)
@@ -161,11 +215,21 @@ function Progress() {
     const startVal = startingPage === '' ? 0 : Number(startingPage)
     const currentVal = currentPage === '' ? 0 : Number(currentPage)
     const yesterdayVal = yesterdayProgress === '' ? 0 : Number(yesterdayProgress)
+    const totalVal = totalPages === '' ? 0 : Number(totalPages)
 
     if (currentVal < startVal) {
       setMessage({
         type: 'danger',
         text: 'Current page cannot be less than starting page.',
+      })
+      setSaving(false)
+      return
+    }
+
+    if (totalVal > 0 && currentVal > totalVal) {
+      setMessage({
+        type: 'danger',
+        text: 'Current page cannot exceed total pages.',
       })
       setSaving(false)
       return
@@ -179,6 +243,7 @@ function Progress() {
           starting_page: startVal,
           current_page: currentVal,
           yesterday_progress: yesterdayVal,
+          total_pages: totalVal,
         })
         .eq('id', record.id)
         .select()
@@ -199,6 +264,7 @@ function Progress() {
             starting_page: startVal,
             current_page: currentVal,
             yesterday_progress: yesterdayVal,
+            total_pages: totalVal,
           },
         ])
         .select()
@@ -218,6 +284,7 @@ function Progress() {
   const numStarting = startingPage === '' ? 0 : Number(startingPage)
   const numCurrent = currentPage === '' ? 0 : Number(currentPage)
   const numYesterday = yesterdayProgress === '' ? 0 : Number(yesterdayProgress)
+  const numTotal = totalPages === '' ? 0 : Number(totalPages)
   const todayPages = Math.max(0, numCurrent - numStarting)
 
   if (loading) {
@@ -240,6 +307,11 @@ function Progress() {
         </Alert>
       )}
 
+      {/* Book Overall Progress Bar Card */}
+      <div className="mb-4">
+        <OverallProgressCard currentPage={numCurrent} totalPages={numTotal} />
+      </div>
+
       {/* Progress & Comparison Stats Row */}
       <Row className="g-4 mb-4">
         <Col md={6}>
@@ -258,7 +330,7 @@ function Progress() {
         <Card.Body className="p-4">
           <Form onSubmit={handleSave}>
             <Row className="g-3">
-              <Col md={4}>
+              <Col sm={6} lg={3}>
                 <Form.Group controlId="startingPage">
                   <Form.Label className="fw-semibold">Starting Page</Form.Label>
                   <Form.Control
@@ -269,11 +341,11 @@ function Progress() {
                     placeholder="e.g. 50"
                     required
                   />
-                  <Form.Text className="text-secondary">Page where you started today</Form.Text>
+                  <Form.Text className="text-secondary">Page started today</Form.Text>
                 </Form.Group>
               </Col>
 
-              <Col md={4}>
+              <Col sm={6} lg={3}>
                 <Form.Group controlId="currentPage">
                   <Form.Label className="fw-semibold">Current Page</Form.Label>
                   <Form.Control
@@ -284,13 +356,28 @@ function Progress() {
                     placeholder="e.g. 85"
                     required
                   />
-                  <Form.Text className="text-secondary">Page you are currently at</Form.Text>
+                  <Form.Text className="text-secondary">Where you are now</Form.Text>
                 </Form.Group>
               </Col>
 
-              <Col md={4}>
+              <Col sm={6} lg={3}>
+                <Form.Group controlId="totalPages">
+                  <Form.Label className="fw-semibold">Total Pages</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min={0}
+                    value={totalPages}
+                    onChange={(e) => setTotalPages(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="e.g. 300"
+                    required
+                  />
+                  <Form.Text className="text-secondary">Total pages in book</Form.Text>
+                </Form.Group>
+              </Col>
+
+              <Col sm={6} lg={3}>
                 <Form.Group controlId="yesterdayProgress">
-                  <Form.Label className="fw-semibold">Yesterday's Progress (pages)</Form.Label>
+                  <Form.Label className="fw-semibold">Yesterday's Progress</Form.Label>
                   <Form.Control
                     type="number"
                     min={0}
@@ -299,7 +386,7 @@ function Progress() {
                     placeholder="e.g. 20"
                     required
                   />
-                  <Form.Text className="text-secondary">Total pages read yesterday</Form.Text>
+                  <Form.Text className="text-secondary">Pages read yesterday</Form.Text>
                 </Form.Group>
               </Col>
             </Row>
