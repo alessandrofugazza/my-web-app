@@ -7,6 +7,7 @@ import AppNavbar from './components/AppNavbar'
 import Home from './pages/Home'
 import BackgroundMusic from './pages/BackgroundMusic'
 import Progress from './pages/Progress'
+import Topics from './pages/Topics'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/bg-music" element={<BackgroundMusic />} />
           <Route path="/progress" element={<Progress />} />
+          <Route path="/topics" element={<Topics />} />
         </Routes>
       </Container>
     </div>

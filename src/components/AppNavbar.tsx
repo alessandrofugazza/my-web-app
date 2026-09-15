@@ -22,6 +22,9 @@ function AppNavbar() {
             <Nav.Link as={NavLink} to="/progress">
               Progress
             </Nav.Link>
+            <Nav.Link as={NavLink} to="/topics">
+              Topics
+            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
