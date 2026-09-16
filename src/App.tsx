@@ -8,6 +8,7 @@ import Home from './pages/Home'
 import BackgroundMusic from './pages/BackgroundMusic'
 import Progress from './pages/Progress'
 import Topics from './pages/Topics'
+import Books from './pages/Books'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/bg-music" element={<BackgroundMusic />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/topics" element={<Topics />} />
+          <Route path="/books" element={<Books />} />
         </Routes>
       </Container>
     </div>

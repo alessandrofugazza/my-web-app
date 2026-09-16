@@ -25,6 +25,9 @@ function AppNavbar() {
             <Nav.Link as={NavLink} to="/topics">
               Topics
             </Nav.Link>
+            <Nav.Link as={NavLink} to="/books">
+              Books
+            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
