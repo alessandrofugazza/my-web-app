@@ -11,6 +11,7 @@ import BackgroundMusic from './pages/BackgroundMusic'
 import Progress from './pages/Progress'
 import Topics from './pages/Topics'
 import Books from './pages/Books'
+import Warehouse from './pages/Warehouse'
 
 function App() {
   return (
@@ -49,6 +50,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Books />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/warehouse"
+              element={
+                <ProtectedRoute>
+                  <Warehouse />
                 </ProtectedRoute>
               }
             />
