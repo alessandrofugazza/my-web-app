@@ -102,11 +102,11 @@ function Warehouse() {
     return () => window.clearTimeout(timer)
   }, [search])
 
-  function resetItemForm() {
+  function resetItemForm(keepLocation = false) {
     setEditingId(null)
     setItemName('')
     setQuantity('1')
-    setFormLocation(emptyLocation)
+    if (!keepLocation) setFormLocation(emptyLocation)
   }
 
   async function saveItem(e: FormEvent) {
@@ -124,7 +124,7 @@ function Warehouse() {
       building_id: formLocation.buildingId, room_id: formLocation.roomId, container_id: formLocation.containerId,
     }, editingId ?? undefined)
     if (success) {
-      resetItemForm()
+      resetItemForm(!editingId)
       setPage(0)
     }
   }
@@ -399,7 +399,7 @@ function Warehouse() {
             </Row>
             <div className="d-flex gap-2 mt-3">
               <Button type="submit" disabled={saving || loadingLists}>{editingId ? 'Save changes' : 'Add item'}</Button>
-              {editingId && <Button variant="outline-secondary" onClick={resetItemForm} disabled={saving}>Cancel editing</Button>}
+              {editingId && <Button variant="outline-secondary" onClick={() => resetItemForm()} disabled={saving}>Cancel editing</Button>}
             </div>
           </Form>
         </Card.Body>
