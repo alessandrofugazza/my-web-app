@@ -26,7 +26,7 @@ type EditLocation =
   | { kind: 'building'; id: string; name: string }
   | { kind: 'type'; id: string; name: string }
   | { kind: 'room'; id: string; name: string; buildingId: string; originalBuildingId: string }
-  | { kind: 'container'; id: string; number: string; typeId: string; buildingId: string; roomId: string; originalBuildingId: string; originalRoomId: string }
+  | { kind: 'container'; id: string; name: string; number: string; typeId: string; buildingId: string; roomId: string; originalBuildingId: string; originalRoomId: string }
 
 interface LocationFieldsProps {
   prefix: string
@@ -65,7 +65,7 @@ function LocationFields({ prefix, location, onChange, buildings, rooms, containe
           <Form.Label>Container</Form.Label>
           <Form.Select value={location.containerId} required={required} disabled={!location.roomId} onChange={(e) => onChange({ ...location, containerId: e.target.value })}>
             <option value="">{required ? 'Select a container' : 'All containers'}</option>
-            {containers.filter((container) => container.room_id === location.roomId).map((container) => <option key={container.id} value={container.id}>#{container.number} - {containerTypes.find((type) => type.id === container.type_id)?.name ?? 'Type not assigned'}</option>)}
+            {containers.filter((container) => container.room_id === location.roomId).map((container) => <option key={container.id} value={container.id}>{container.name} (#{container.number}) - {containerTypes.find((type) => type.id === container.type_id)?.name ?? 'Type not assigned'}</option>)}
           </Form.Select>
         </Form.Group>
       </Col>
@@ -86,6 +86,7 @@ function Warehouse() {
   const [buildingName, setBuildingName] = useState('')
   const [roomName, setRoomName] = useState('')
   const [containerNumber, setContainerNumber] = useState('')
+  const [containerName, setContainerName] = useState('')
   const [newTypeName, setNewTypeName] = useState('')
   const [newContainerType, setNewContainerType] = useState('')
   const [itemName, setItemName] = useState('')
@@ -153,9 +154,15 @@ function Warehouse() {
       if (!roomName.trim() || !manageBuilding) { setError('Select a building and enter a room name.'); return }
       if (await mutate('warehouse_rooms', 'insert', { name: roomName.trim(), building_id: manageBuilding })) setRoomName('')
     } else {
-      if (!manageBuilding || !manageRoom || containerNumber === '' || !newContainerType) { setError('Select a building, room, and container type and enter a container number.'); return }
-      if (await mutate('warehouse_containers', 'insert', { number: Number(containerNumber), building_id: manageBuilding, room_id: manageRoom, type_id: newContainerType })) setContainerNumber('')
+      if (!manageBuilding || !manageRoom || !containerName.trim() || containerNumber === '' || !newContainerType) { setError('Select a building, room, and container type and enter a container name and number.'); return }
+      if (containerNameTaken(containerName)) { setError(`A container named "${containerName.trim()}" already exists. Choose a different name.`); return }
+      if (await mutate('warehouse_containers', 'insert', { name: containerName.trim(), number: Number(containerNumber), building_id: manageBuilding, room_id: manageRoom, type_id: newContainerType })) { setContainerNumber(''); setContainerName('') }
     }
+  }
+
+  function containerNameTaken(name: string, exceptId?: string) {
+    const normalized = name.trim().toLowerCase()
+    return containers.some((container) => container.id !== exceptId && container.name.trim().toLowerCase() === normalized)
   }
 
   async function addContainerType(e: FormEvent) {
@@ -192,12 +199,16 @@ function Warehouse() {
       if (!edit.name.trim() || !edit.buildingId) { setError('Enter a room name and select a building.'); return }
       success = await mutate('warehouse_rooms', 'update', { name: edit.name.trim(), building_id: edit.buildingId }, edit.id)
     } else {
-      if (edit.number === '' || !edit.buildingId || !edit.roomId || !edit.typeId) {
-        setError('Enter a container number and select its type, building, and room.')
+      if (!edit.name.trim() || edit.number === '' || !edit.buildingId || !edit.roomId || !edit.typeId) {
+        setError('Enter a container name and number and select its type, building, and room.')
+        return
+      }
+      if (containerNameTaken(edit.name, edit.id)) {
+        setError(`A container named "${edit.name.trim()}" already exists. Choose a different name.`)
         return
       }
       success = await mutate('warehouse_containers', 'update', {
-        number: Number(edit.number), type_id: edit.typeId, building_id: edit.buildingId, room_id: edit.roomId,
+        name: edit.name.trim(), number: Number(edit.number), type_id: edit.typeId, building_id: edit.buildingId, room_id: edit.roomId,
       }, edit.id)
     }
     if (!success) return
@@ -282,20 +293,30 @@ function Warehouse() {
                 {rooms.filter((room) => room.building_id === manageBuilding).map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}
               </Form.Select>
               <Form onSubmit={(e) => addLocation(e, 'container')} className="mb-2">
-                <Form.Select aria-label="New container type" className="mb-2" required value={newContainerType} onChange={(e) => setNewContainerType(e.target.value)}>
-                  <option value="">Select a container type</option>
-                  {containerTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
-                </Form.Select>
-                <div className="d-flex gap-2">
-                  <Form.Control aria-label="New container number" type="number" placeholder="Container number" min={0} max={2147483647} step={1} required value={containerNumber} onChange={(e) => setContainerNumber(e.target.value)} />
+                <Form.Group controlId="new-container-type" className="mb-2">
+                  <Form.Label className="small mb-1">Type</Form.Label>
+                  <Form.Select required value={newContainerType} onChange={(e) => setNewContainerType(e.target.value)}>
+                    <option value="">Select a container type</option>
+                    {containerTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
+                  </Form.Select>
+                </Form.Group>
+                <div className="d-flex gap-2 align-items-end">
+                  <Form.Group controlId="new-container-name" className="flex-grow-1">
+                    <Form.Label className="small mb-1">Name</Form.Label>
+                    <Form.Control placeholder="e.g. Red toolbox" maxLength={200} required value={containerName} onChange={(e) => setContainerName(e.target.value)} />
+                  </Form.Group>
+                  <Form.Group controlId="new-container-number" style={{ width: '6.5rem' }}>
+                    <Form.Label className="small mb-1">Number</Form.Label>
+                    <Form.Control type="number" placeholder="e.g. 12" min={0} max={2147483647} step={1} required value={containerNumber} onChange={(e) => setContainerNumber(e.target.value)} />
+                  </Form.Group>
                   <Button type="submit" disabled={saving || loadingLists || !manageRoom}>Add</Button>
                 </div>
               </Form>
               <ListGroup className="warehouse-location-list">
                 {containers.filter((container) => container.room_id === manageRoom).map((container) => <ListGroup.Item key={container.id}>
                   <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
-                    <span>#{container.number}{!container.type_id && <span className="text-danger"> - Type required</span>}</span>
-                    <div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'container', id: container.id, number: String(container.number), typeId: container.type_id ?? '', buildingId: container.building_id, roomId: container.room_id, originalBuildingId: container.building_id, originalRoomId: container.room_id })} aria-label={`Edit container ${container.number}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteLocation('container', container.id, `container #${container.number}`)} aria-label={`Delete container ${container.number}`}>Delete</Button></div>
+                    <span>{container.name} (#{container.number}){!container.type_id && <span className="text-danger"> - Type required</span>}</span>
+                    <div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'container', id: container.id, name: container.name, number: String(container.number), typeId: container.type_id ?? '', buildingId: container.building_id, roomId: container.room_id, originalBuildingId: container.building_id, originalRoomId: container.room_id })} aria-label={`Edit container ${container.number}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteLocation('container', container.id, `container "${container.name}"`)} aria-label={`Delete container ${container.number}`}>Delete</Button></div>
                   </div>
                   <Form.Select aria-label={`Type for container ${container.number}`} value={container.type_id ?? ''} disabled={saving || loadingLists} onChange={(e) => { if (e.target.value) void mutate('warehouse_containers', 'update', { type_id: e.target.value }, container.id) }}>
                     <option value="" disabled>Select a type</option>
@@ -323,6 +344,10 @@ function Warehouse() {
             )}
             {editLocation?.kind === 'container' && (
               <>
+                <Form.Group controlId="edit-container-name" className="mb-3">
+                  <Form.Label>Container name</Form.Label>
+                  <Form.Control maxLength={200} required value={editLocation.name} onChange={(e) => setEditLocation({ ...editLocation, name: e.target.value })} />
+                </Form.Group>
                 <Form.Group controlId="edit-container-number" className="mb-3">
                   <Form.Label>Container number</Form.Label>
                   <Form.Control type="number" min={0} max={2147483647} step={1} required value={editLocation.number} onChange={(e) => setEditLocation({ ...editLocation, number: e.target.value })} />
@@ -397,7 +422,7 @@ function Warehouse() {
                     <td className="text-break">{item.name}</td><td>{item.quantity}</td>
                     <td>{names.building.get(item.building_id) ?? 'Unavailable'}</td>
                     <td>{names.room.get(item.room_id) ?? 'Unavailable'}</td>
-                    <td>{(() => { const container = names.container.get(item.container_id); return container ? `#${container.number} - ${container.type_id ? names.type.get(container.type_id) ?? 'Unavailable' : 'Type not assigned'}` : 'Unavailable' })()}</td>
+                    <td>{(() => { const container = names.container.get(item.container_id); return container ? `${container.name} (#${container.number}) - ${container.type_id ? names.type.get(container.type_id) ?? 'Unavailable' : 'Type not assigned'}` : 'Unavailable' })()}</td>
                     <td><div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => editItem(item)} aria-label={`Edit ${item.name}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteItem(item)} aria-label={`Delete ${item.name}`}>Delete</Button></div></td>
                   </tr>)}</tbody>
                 </Table>

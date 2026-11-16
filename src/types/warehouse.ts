@@ -13,6 +13,7 @@ export interface WarehouseContainer {
   id: string
   building_id: string
   room_id: string
+  name: string
   number: number
   type_id: string | null
 }
