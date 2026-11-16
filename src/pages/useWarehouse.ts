@@ -6,7 +6,7 @@ const PAGE_SIZE = 25
 const LIST_PAGE_SIZE = 500
 type ListTable = 'warehouse_buildings' | 'warehouse_rooms' | 'warehouse_containers' | 'warehouse_container_types'
 type Table = ListTable | 'warehouse_items'
-type Values = Record<string, string | number>
+type Values = Record<string, string | number | null>
 
 interface Filters {
   search: string

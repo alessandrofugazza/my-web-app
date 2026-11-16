@@ -27,6 +27,7 @@ export interface WarehouseItem {
   id: string
   name: string
   quantity: number
+  notes: string | null
   building_id: string
   room_id: string
   container_id: string
