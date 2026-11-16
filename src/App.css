@@ -7,6 +7,44 @@
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
 }
 
+.now-playing {
+  min-height: 45vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(13, 110, 253, 0.5);
+  background: radial-gradient(circle at top, rgba(13, 110, 253, 0.3), rgba(20, 20, 30, 0.9) 70%);
+  box-shadow: 0 0 2rem rgba(13, 110, 253, 0.25);
+  transition: box-shadow 0.4s ease;
+}
+
+.now-playing.is-playing {
+  animation: now-playing-glow 2.5s ease-in-out infinite;
+}
+
+.now-playing-label {
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.now-playing-title {
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 0.5rem;
+}
+
+@keyframes now-playing-glow {
+  0%, 100% { box-shadow: 0 0 1.5rem rgba(13, 110, 253, 0.25); }
+  50% { box-shadow: 0 0 3.5rem rgba(13, 110, 253, 0.6); }
+}
+
 .warehouse-location-list {
   max-height: 16rem;
   overflow-y: auto;
