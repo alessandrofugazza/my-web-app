@@ -45,6 +45,18 @@
   50% { box-shadow: 0 0 3.5rem rgba(13, 110, 253, 0.6); }
 }
 
+@media (hover: hover) {
+  .row-actions {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  tr:hover .row-actions,
+  .row-actions:focus-within {
+    opacity: 1;
+  }
+}
+
 .warehouse-location-list {
   max-height: 16rem;
   overflow-y: auto;

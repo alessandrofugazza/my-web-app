@@ -11,6 +11,7 @@ import Row from 'react-bootstrap/Row'
 import Spinner from 'react-bootstrap/Spinner'
 import Table from 'react-bootstrap/Table'
 import { useAuth } from '../AuthContext'
+import { PencilIcon, TrashIcon } from '../components/Icons'
 import type { Building, ContainerType, Room, WarehouseContainer, WarehouseItem } from '../types/warehouse'
 import { useWarehouse } from './useWarehouse'
 
@@ -421,13 +422,13 @@ function Warehouse() {
               <p className="text-secondary">{count} {count === 1 ? 'item' : 'items'} found</p>
               {items.length === 0 ? <p>No items match these filters.</p> : (
                 <Table responsive striped hover>
-                  <thead><tr><th>Item</th><th>Quantity</th><th>Building</th><th>Room</th><th>Container</th><th>Actions</th></tr></thead>
+                  <thead><tr><th>Item</th><th>Quantity</th><th>Building</th><th>Room</th><th>Container</th><th><span className="visually-hidden">Actions</span></th></tr></thead>
                   <tbody>{items.map((item) => <tr key={item.id}>
                     <td className="text-break">{item.name}{item.notes && <div className="small text-secondary" style={{ whiteSpace: 'pre-wrap' }}>{item.notes}</div>}</td><td>{item.quantity}</td>
                     <td>{names.building.get(item.building_id) ?? 'Unavailable'}</td>
                     <td>{names.room.get(item.room_id) ?? 'Unavailable'}</td>
                     <td>{(() => { const container = names.container.get(item.container_id); return container ? `${container.name} (#${container.number}) - ${container.type_id ? names.type.get(container.type_id) ?? 'Unavailable' : 'Type not assigned'}` : 'Unavailable' })()}</td>
-                    <td><div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => editItem(item)} aria-label={`Edit ${item.name}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteItem(item)} aria-label={`Delete ${item.name}`}>Delete</Button></div></td>
+                    <td><div className="row-actions d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => editItem(item)} aria-label={`Edit ${item.name}`} title="Edit"><PencilIcon /></Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteItem(item)} aria-label={`Delete ${item.name}`} title="Delete"><TrashIcon /></Button></div></td>
                   </tr>)}</tbody>
                 </Table>
               )}
