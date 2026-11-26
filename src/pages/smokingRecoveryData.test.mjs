@@ -31,9 +31,9 @@ test('all simultaneous final milestones are next and then reached together', () 
   assert.equal(at.remaining, null)
   const groups = groupRecoverySteps(at.achieved)
   assert.equal(groups[0].hours, 336)
-  assert.deepEqual(groups[0].descriptions, before.nextSteps.map((step) => step.description))
+  assert.deepEqual(groups[0].entries, before.nextSteps)
   assert.ok(groups.every((group, index) => index === 0 || groups[index - 1].hours > group.hours))
-  assert.deepEqual(groups.at(-1).descriptions, smokingRecovery.filter((step) => step.hours === 0).map((step) => step.description))
+  assert.deepEqual(groups.at(-1).entries, smokingRecovery.filter((step) => step.hours === 0))
 })
 
 test('a clock earlier than the start does not produce negative elapsed time', () => {
@@ -48,9 +48,19 @@ test('alcohol milestones use their own timeline and group simultaneous entries',
   const finalEntries = alcoholRecovery.filter((step) => step.hours === 336)
   assert.ok(finalEntries.length > 1)
   assert.deepEqual(before.nextSteps, finalEntries)
-  assert.deepEqual(groupRecoverySteps(at.achieved)[0].descriptions, finalEntries.map((step) => step.description))
+  assert.deepEqual(groupRecoverySteps(at.achieved)[0].entries, finalEntries)
   assert.equal(at.achieved.length, alcoholRecovery.length)
   assert.equal(at.next, undefined)
+})
+
+test('major markers remain on individual entries before and after a shared milestone', () => {
+  for (const steps of [smokingRecovery, alcoholRecovery]) {
+    const before = getRecoveryProgress(start, start + 336 * hour - 1, steps)
+    const at = getRecoveryProgress(start, start + 336 * hour, steps)
+    assert.ok(before.nextSteps.some((step) => step.major))
+    assert.ok(before.nextSteps.some((step) => !step.major))
+    assert.deepEqual(groupRecoverySteps(at.achieved)[0].entries, before.nextSteps)
+  }
 })
 
 test('reached milestone times show how long ago each milestone was reached', () => {

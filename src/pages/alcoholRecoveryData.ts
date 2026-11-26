@@ -1,4 +1,6 @@
-const alcoholRecovery = [
+import type { RecoveryStep } from './smokingRecoveryData'
+
+const alcoholRecovery: RecoveryStep[] = [
   // First hour
 
   { hours: 0, description: 'Additional exposure to ethanol and its toxic metabolic byproducts stops.' },
@@ -34,7 +36,7 @@ const alcoholRecovery = [
   { hours: 21, description: 'The nervous system continues adjusting to the absence of alcohol-induced sedation.' },
   { hours: 22, description: 'The liver has experienced nearly an entire day without additional ethanol consumption.' },
   { hours: 23, description: 'The body approaches its first full day without renewed alcohol-induced intoxication.' },
-  { hours: 24, description: 'One full day without additional alcohol consumption has been completed.' },
+  { hours: 24, description: 'One full day without additional alcohol consumption has been completed.', major: true },
   { hours: 24, description: 'Acute intoxication may have resolved, depending on the amount previously consumed.' },
   { hours: 24, description: 'Hangover-related headache, nausea and fatigue may begin subsiding.' },
   { hours: 24, description: 'The liver may begin devoting more metabolic resources to its ordinary functions once ethanol has been eliminated.' },
@@ -74,7 +76,7 @@ const alcoholRecovery = [
   { hours: 70, description: 'Early recovery of appetite and digestive comfort may become more noticeable in individuals with uncomplicated withdrawal.' },
   { hours: 72, description: 'Three full days without additional alcohol consumption have been completed.' },
   { hours: 72, description: 'Many uncomplicated withdrawal symptoms may begin decreasing in intensity, although serious withdrawal complications can still occur.' },
-  { hours: 72, description: 'Blood pressure may begin decreasing in individuals whose hypertension was partly caused by heavy drinking.' },
+  { hours: 72, description: 'Blood pressure may begin decreasing in individuals whose hypertension was partly caused by heavy drinking.', major: true },
   { hours: 72, description: 'The cardiovascular system continues recovering from repeated alcohol-induced fluctuations in blood pressure.' },
   { hours: 72, description: 'The digestive system may begin functioning more comfortably as acute gastrointestinal irritation subsides.' },
 
@@ -110,15 +112,15 @@ const alcoholRecovery = [
   { hours: 150, description: 'Periods of mental clarity between withdrawal-related symptoms may become longer.' },
   { hours: 156, description: 'The cardiovascular system continues adapting to sustained abstinence.' },
   { hours: 162, description: 'The body approaches its first full week without alcohol-induced intoxication or renewed metabolic exposure.' },
-  { hours: 168, description: 'One full week of continuous abstinence has been completed.' },
-  { hours: 168, description: 'Acute withdrawal symptoms have usually substantially diminished in uncomplicated cases.' },
-  { hours: 168, description: 'Blood pressure may have measurably decreased in individuals with alcohol-associated hypertension.' },
+  { hours: 168, description: 'One full week of continuous abstinence has been completed.', major: true },
+  { hours: 168, description: 'Acute withdrawal symptoms have usually substantially diminished in uncomplicated cases.', major: true },
+  { hours: 168, description: 'Blood pressure may have measurably decreased in individuals with alcohol-associated hypertension.', major: true },
   { hours: 168, description: 'Markers of intestinal barrier dysfunction may begin showing measurable improvement.' },
   { hours: 168, description: 'The intestinal barrier may be recovering its ability to limit the passage of bacterial products into the bloodstream.' },
-  { hours: 168, description: 'Certain biomarkers associated with alcohol-related liver injury may have improved.' },
+  { hours: 168, description: 'Certain biomarkers associated with alcohol-related liver injury may have improved.', major: true },
   { hours: 168, description: 'Markers associated with impaired vascular function may begin decreasing.' },
   { hours: 168, description: 'The body has completed an entire week without the additional caloric intake associated with alcoholic beverages.' },
-  { hours: 168, description: 'Sleep may begin becoming more restorative as acute withdrawal subsides, although insomnia can persist.' },
+  { hours: 168, description: 'Sleep may begin becoming more restorative as acute withdrawal subsides, although insomnia can persist.', major: true },
 
   // Day 8
 
@@ -180,15 +182,15 @@ const alcoholRecovery = [
 
   // Two-week milestones: general recovery
 
-  { hours: 336, description: 'Two full weeks of continuous abstinence have been completed.' },
+  { hours: 336, description: 'Two full weeks of continuous abstinence have been completed.', major: true },
   { hours: 336, description: 'The body has avoided fourteen days of additional exposure to ethanol and its toxic metabolic byproducts.' },
   { hours: 336, description: 'The acute withdrawal phase has usually resolved, although longer-lasting withdrawal symptoms can persist.' },
 
   // Two-week milestones: liver
 
-  { hours: 336, description: 'Alcohol-related fat accumulation within liver cells may have substantially decreased.' },
+  { hours: 336, description: 'Alcohol-related fat accumulation within liver cells may have substantially decreased.', major: true },
   { hours: 336, description: 'Early-stage uncomplicated alcohol-related fatty liver disease may be approaching reversal.' },
-  { hours: 336, description: 'Elevated liver enzymes associated with alcohol-related injury may have begun returning toward healthier levels.' },
+  { hours: 336, description: 'Elevated liver enzymes associated with alcohol-related injury may have begun returning toward healthier levels.', major: true },
   { hours: 336, description: 'The liver continues recovering its ability to regulate lipid and energy metabolism.' },
   { hours: 336, description: 'Alcohol-related oxidative and metabolic stress within the liver may have decreased.' },
 
@@ -203,7 +205,7 @@ const alcoholRecovery = [
 
   // Two-week milestones: cardiovascular system
 
-  { hours: 336, description: 'Resting blood pressure may have measurably improved, particularly in individuals with alcohol-associated hypertension.' },
+  { hours: 336, description: 'Resting blood pressure may have measurably improved, particularly in individuals with alcohol-associated hypertension.', major: true },
   { hours: 336, description: 'Certain markers associated with impaired vascular regulation may have decreased.' },
   { hours: 336, description: 'Circulating platelet counts may have substantially recovered from alcohol-related suppression.' },
   { hours: 336, description: 'The cardiovascular system is no longer experiencing repeated episodes of alcohol-induced physiological stress.' },
@@ -217,7 +219,7 @@ const alcoholRecovery = [
 
   // Two-week milestones: sleep and energy
 
-  { hours: 336, description: 'Sleep quality may begin improving as the body adapts to sleeping without alcohol.' },
+  { hours: 336, description: 'Sleep quality may begin improving as the body adapts to sleeping without alcohol.', major: true },
   { hours: 336, description: 'Alcohol-induced fragmentation of sleep is no longer being repeatedly triggered by drinking.' },
   { hours: 336, description: 'Daytime energy may have improved through better hydration, nutrition and sleep.' },
   { hours: 336, description: 'Morning fatigue associated with repeated intoxication and hangovers may have substantially diminished.' },

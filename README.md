@@ -5,6 +5,8 @@
 Signed-in users can track smoking and alcohol recovery independently from the
 Recovery page, see reached milestones and the countdown to the next one, reset
 either timer, or start over using the current time or a past local date and time.
+Major milestone tags highlight selected entries in both the next and reached
+milestones; they indicate significance, not confirmed individual outcomes.
 Run `supabase/migrations/20261126140000_smoking_recovery.sql` in the Supabase SQL
 editor (or apply it with the Supabase CLI) before using the page. The start
 time is saved to the signed-in account and is available across devices. If the

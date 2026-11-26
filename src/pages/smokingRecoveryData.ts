@@ -1,15 +1,22 @@
-const smokingRecovery = [
+export interface RecoveryStep {
+  hours: number
+  description: string
+  major?: boolean
+}
+
+const smokingRecovery: RecoveryStep[] = [
   // First hour
 
   {
     hours: 0,
     description: 'Exposure to cigarette smoke, tar, carbon monoxide and combustion-related carcinogens stops.',
+    major: true,
   },
   { hours: 0, description: 'The lungs are no longer receiving additional smoke particles from cigarettes.' },
   { hours: 5 / 60, description: 'Nicotine concentrations begin declining after the final cigarette.' },
   { hours: 10 / 60, description: 'The acute stimulation of the sympathetic nervous system begins subsiding.' },
   { hours: 15 / 60, description: 'The immediate nicotine-induced release of stress hormones begins wearing off.' },
-  { hours: 20 / 60, description: 'Heart rate begins returning toward its normal resting level.' },
+  { hours: 20 / 60, description: 'Heart rate begins returning toward its normal resting level.', major: true },
   { hours: 20 / 60, description: 'Blood pressure begins decreasing from smoking-induced elevations.' },
   { hours: 30 / 60, description: 'Nicotine-induced constriction of blood vessels may begin easing.' },
   { hours: 45 / 60, description: 'Carbon monoxide is progressively being released from hemoglobin and exhaled.' },
@@ -44,6 +51,7 @@ const smokingRecovery = [
     hours: 12,
     description:
       'Blood carbon monoxide may be approaching normal nonsmoker levels, although clearance can take longer.',
+    major: true,
   },
   { hours: 12, description: 'Hemoglobin is progressively recovering its oxygen-carrying capacity.' },
   { hours: 13, description: 'The heart is no longer experiencing repeated cigarette-induced increases in workload.' },
@@ -83,6 +91,7 @@ const smokingRecovery = [
   {
     hours: 24,
     description: 'Blood nicotine levels are typically negligible if no additional nicotine has been consumed.',
+    major: true,
   },
   {
     hours: 24,
@@ -91,6 +100,7 @@ const smokingRecovery = [
   {
     hours: 24,
     description: 'One full day of continuous recovery without cigarette smoke exposure has been completed.',
+    major: true,
   },
 
   // 24–48 hours
@@ -133,10 +143,10 @@ const smokingRecovery = [
     hours: 46,
     description: 'The body approaches two full days without renewed exposure to cigarette combustion products.',
   },
-  { hours: 48, description: 'The sense of taste may begin becoming noticeably sharper.' },
-  { hours: 48, description: 'The sense of smell may begin becoming more sensitive.' },
+  { hours: 48, description: 'The sense of taste may begin becoming noticeably sharper.', major: true },
+  { hours: 48, description: 'The sense of smell may begin becoming more sensitive.', major: true },
   { hours: 48, description: 'The lungs may begin clearing accumulated mucus and trapped material more effectively.' },
-  { hours: 48, description: 'Carbon monoxide levels may have returned to the normal nonsmoker range.' },
+  { hours: 48, description: 'Carbon monoxide levels may have returned to the normal nonsmoker range.', major: true },
   { hours: 48, description: 'Food may become more flavorful as taste and smell begin recovering.' },
 
   // 48–72 hours
@@ -169,7 +179,7 @@ const smokingRecovery = [
     hours: 72,
     description: 'The bronchial tubes may begin relaxing, allowing air to move through the lungs more comfortably.',
   },
-  { hours: 72, description: 'Breathing may begin feeling easier and less restricted.' },
+  { hours: 72, description: 'Breathing may begin feeling easier and less restricted.', major: true },
   { hours: 72, description: 'Energy levels may begin improving as early respiratory recovery progresses.' },
   {
     hours: 72,
@@ -233,11 +243,13 @@ const smokingRecovery = [
   {
     hours: 168,
     description: 'One full week of uninterrupted recovery from cigarette smoke exposure has been completed.',
+    major: true,
   },
   {
     hours: 168,
     description:
       'The most severe overall phase of nicotine withdrawal has typically passed, although individual symptoms may persist.',
+    major: true,
   },
   {
     hours: 168,
@@ -344,9 +356,10 @@ const smokingRecovery = [
   {
     hours: 336,
     description: 'Two full weeks of continuous recovery without cigarette smoke exposure have been completed.',
+    major: true,
   },
-  { hours: 336, description: 'Blood circulation may begin improving measurably.' },
-  { hours: 336, description: 'Lung function may begin improving measurably.' },
+  { hours: 336, description: 'Blood circulation may begin improving measurably.', major: true },
+  { hours: 336, description: 'Lung function may begin improving measurably.', major: true },
   {
     hours: 336,
     description: 'Physical activity may begin feeling easier as circulation and respiratory function improve.',
@@ -368,7 +381,7 @@ const smokingRecovery = [
     hours: 336,
     description: 'Natural mucus clearance mechanisms in the nasal passages may be approaching improved functioning.',
   },
-  { hours: 336, description: 'Physical nicotine withdrawal symptoms may have substantially decreased.' },
+  { hours: 336, description: 'Physical nicotine withdrawal symptoms may have substantially decreased.', major: true },
   { hours: 336, description: 'Withdrawal-related concentration difficulties may have become less severe.' },
   {
     hours: 336,
@@ -392,21 +405,21 @@ export function formatMilestoneAgo(elapsed: number, milestoneHours: number) {
   return `${parts.join(' ')} ago`
 }
 
-export function groupRecoverySteps(steps: typeof smokingRecovery) {
-  const groups = new Map<number, string[]>()
+export function groupRecoverySteps(steps: RecoveryStep[]) {
+  const groups = new Map<number, RecoveryStep[]>()
   for (const step of steps) {
-    const descriptions = groups.get(step.hours)
-    if (descriptions) {
-      descriptions.push(step.description)
+    const entries = groups.get(step.hours)
+    if (entries) {
+      entries.push(step)
     } else {
-      groups.set(step.hours, [step.description])
+      groups.set(step.hours, [step])
     }
   }
-  return Array.from(groups, ([hours, descriptions]) => ({ hours, descriptions }))
+  return Array.from(groups, ([hours, entries]) => ({ hours, entries }))
     .sort((a, b) => b.hours - a.hours)
 }
 
-export function getRecoveryProgress(startedAt: number, now: number, steps: typeof smokingRecovery = smokingRecovery) {
+export function getRecoveryProgress(startedAt: number, now: number, steps: RecoveryStep[] = smokingRecovery) {
   const elapsed = Math.max(0, now - startedAt)
 
   const achieved = steps.filter((step) => elapsed >= step.hours * millisecondsPerHour)

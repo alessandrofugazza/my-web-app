@@ -13,6 +13,7 @@ import { supabase } from '../supabase'
 import alcoholRecovery from './alcoholRecoveryData'
 import smokingRecovery from './smokingRecoveryData'
 import { formatMilestoneAgo, getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData'
+import type { RecoveryStep } from './smokingRecoveryData'
 import { loadRecovery, resetRecovery, startRecovery } from './smokingRecoveryStorage'
 import type { RecoveryRecord } from './smokingRecoveryStorage'
 import { parseRecoveryDate } from './recoveryDate'
@@ -38,6 +39,15 @@ function milestoneTime(hours: number) {
   if (hours < 1) return `${Math.round(hours * 60)} minutes`
   if (hours % 24 === 0) return `${hours / 24} ${hours === 24 ? 'day' : 'days'}`
   return `${hours} hours`
+}
+
+function MilestoneEntry({ step }: { step: RecoveryStep }) {
+  return (
+    <li>
+      {step.description}
+      {step.major && <> <Badge bg="primary">Major milestone</Badge></>}
+    </li>
+  )
 }
 
 function RecoveryTracker({ kind }: { kind: 'smoking' | 'alcohol' }) {
@@ -180,7 +190,7 @@ function RecoveryTracker({ kind }: { kind: 'smoking' | 'alcohol' }) {
                       <p className="mb-2">
                         <strong>{milestoneTime(progress.next.hours)}</strong> · in {formatDuration(progress.remaining)}
                       </p>
-                      <ul className="mb-0">{progress.nextSteps.map((step) => <li key={step.description}>{step.description}</li>)}</ul>
+                      <ul className="mb-0">{progress.nextSteps.map((step, index) => <MilestoneEntry key={index} step={step} />)}</ul>
                     </>
                   ) : (
                     <Card.Text>You have reached all milestones in this two-week timeline. Keep going!</Card.Text>
@@ -197,7 +207,7 @@ function RecoveryTracker({ kind }: { kind: 'smoking' | 'alcohol' }) {
                 <strong>{milestoneTime(group.hours)}</strong>
                 <span className="text-body-secondary"> · {formatMilestoneAgo(progress.elapsed, group.hours)}</span>
                 <ul className="mb-0 mt-1">
-                  {group.descriptions.map((description, index) => <li key={index}>{description}</li>)}
+                  {group.entries.map((step, index) => <MilestoneEntry key={index} step={step} />)}
                 </ul>
               </div>
             ))}
