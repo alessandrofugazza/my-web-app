@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { parseRecoveryDate } from './recoveryDate.ts'
+import { formatRecoveryDate, parseRecoveryDate } from './recoveryDate.ts'
+
+test('milestone date uses local 24-hour time without seconds', () => {
+  assert.match(formatRecoveryDate(new Date(2025, 2, 15, 15, 17, 42).getTime()), /15:17(?!:)/)
+  assert.match(formatRecoveryDate(new Date(2025, 2, 15, 0, 5, 42).getTime()), /00:05(?!:)/)
+})
 
 test('a past local date and minute is converted to the corresponding instant', () => {
   const expected = new Date(2025, 2, 15, 13, 47).getTime()

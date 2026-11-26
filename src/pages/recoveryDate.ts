@@ -1,3 +1,14 @@
+export function formatRecoveryDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  })
+}
+
 export function parseRecoveryDate(value: string, now: number): number {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
     throw new Error('Choose a valid date and time.')

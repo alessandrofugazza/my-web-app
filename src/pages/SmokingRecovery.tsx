@@ -16,7 +16,7 @@ import { formatDuration, formatMilestoneAgo, getRecoveryProgress, groupRecoveryS
 import type { RecoveryStep } from './smokingRecoveryData'
 import { loadRecovery, resetRecovery, startRecovery } from './smokingRecoveryStorage'
 import type { RecoveryRecord } from './smokingRecoveryStorage'
-import { parseRecoveryDate } from './recoveryDate'
+import { formatRecoveryDate, parseRecoveryDate } from './recoveryDate'
 
 function milestoneTime(hours: number) {
   if (hours === 0) return 'Start'
@@ -171,8 +171,11 @@ function RecoveryTracker({ kind }: { kind: 'smoking' | 'alcohol' }) {
                   <Card.Title>Next milestone</Card.Title>
                   {progress.next && progress.remaining !== null ? (
                     <>
-                      <p className="mb-2">
-                        <strong>{milestoneTime(progress.next.hours)}</strong> · in {formatDuration(progress.remaining)}
+                      <p className="text-body-secondary mb-0">Time until next milestone</p>
+                      <p className="fs-2 fw-bold text-success mb-1">{formatDuration(progress.remaining)}</p>
+                      <p className="mb-3">
+                        <strong>{milestoneTime(progress.next.hours)}</strong> · Reached at{' '}
+                        {formatRecoveryDate(startedAt + progress.next.hours * 60 * 60 * 1000)}
                       </p>
                       <ul className="mb-0">{progress.nextSteps.map((step, index) => <MilestoneEntry key={index} step={step} />)}</ul>
                     </>
