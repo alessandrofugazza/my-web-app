@@ -4,8 +4,10 @@ export interface RecoveryRecord {
   started_at: string | null
 }
 
-async function readRecord(client: SupabaseClient, userId: string): Promise<RecoveryRecord | null> {
-  const { data, error } = await client.from('smoking_recovery')
+export type RecoveryTable = 'smoking_recovery' | 'alcohol_recovery'
+
+async function readRecord(client: SupabaseClient, userId: string, table: RecoveryTable): Promise<RecoveryRecord | null> {
+  const { data, error } = await client.from(table)
     .select('started_at').eq('user_id', userId).maybeSingle<RecoveryRecord>()
   if (error) throw new Error(error.message)
   if (data?.started_at !== null && data?.started_at !== undefined && !Number.isFinite(Date.parse(data.started_at))) {
@@ -18,9 +20,11 @@ export async function loadRecovery(
   client: SupabaseClient,
   userId: string,
   readLegacy: () => string | null,
+  table: RecoveryTable = 'smoking_recovery',
 ): Promise<RecoveryRecord | null> {
-  const record = await readRecord(client, userId)
+  const record = await readRecord(client, userId, table)
   if (record) return record
+  if (table !== 'smoking_recovery') return null
 
   let saved: string | null
   try {
@@ -41,7 +45,7 @@ export async function loadRecovery(
       ignoreDuplicates: true,
     })
   if (error) throw new Error(error.message)
-  const imported = await readRecord(client, userId)
+  const imported = await readRecord(client, userId, table)
   if (!imported) throw new Error('The imported start time could not be found.')
   return imported
 }
@@ -51,10 +55,13 @@ export async function startRecovery(
   userId: string,
   record: RecoveryRecord | null,
   startedAt: string,
+  tableName: RecoveryTable = 'smoking_recovery',
 ): Promise<RecoveryRecord> {
-  const table = client.from('smoking_recovery')
+  const table = client.from(tableName)
   const query = record
-    ? table.update({ started_at: startedAt }).eq('user_id', userId).is('started_at', null)
+    ? record.started_at === null
+      ? table.update({ started_at: startedAt }).eq('user_id', userId).is('started_at', null)
+      : table.update({ started_at: startedAt }).eq('user_id', userId).eq('started_at', record.started_at)
     : table.insert({ user_id: userId, started_at: startedAt })
   const { data, error } = await query.select('started_at').maybeSingle<RecoveryRecord>()
   if (error) throw new Error(error.message)
@@ -66,8 +73,9 @@ export async function resetRecovery(
   client: SupabaseClient,
   userId: string,
   startedAt: string,
+  table: RecoveryTable = 'smoking_recovery',
 ): Promise<RecoveryRecord> {
-  const { data, error } = await client.from('smoking_recovery')
+  const { data, error } = await client.from(table)
     .update({ started_at: null }).eq('user_id', userId).eq('started_at', startedAt)
     .select('started_at').maybeSingle<RecoveryRecord>()
   if (error) throw new Error(error.message)

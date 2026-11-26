@@ -394,18 +394,18 @@ export function groupRecoverySteps(steps: typeof smokingRecovery) {
     .sort((a, b) => b.hours - a.hours)
 }
 
-export function getRecoveryProgress(startedAt: number, now: number) {
+export function getRecoveryProgress(startedAt: number, now: number, steps: typeof smokingRecovery = smokingRecovery) {
   const elapsed = Math.max(0, now - startedAt)
 
-  const achieved = smokingRecovery.filter((step) => elapsed >= step.hours * millisecondsPerHour)
+  const achieved = steps.filter((step) => elapsed >= step.hours * millisecondsPerHour)
 
-  const next = smokingRecovery.find((step) => elapsed < step.hours * millisecondsPerHour)
+  const next = steps.find((step) => elapsed < step.hours * millisecondsPerHour)
 
   return {
     elapsed,
     achieved,
     next,
-    nextSteps: next ? smokingRecovery.filter((step) => step.hours === next.hours) : [],
+    nextSteps: next ? steps.filter((step) => step.hours === next.hours) : [],
     remaining: next ? Math.max(0, next.hours * millisecondsPerHour - elapsed) : null,
   }
 }

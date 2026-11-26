@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import smokingRecovery, { getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData.ts'
+import alcoholRecovery from './alcoholRecoveryData.ts'
 
 const hour = 60 * 60 * 1000
 const start = 1_000_000
@@ -39,4 +40,15 @@ test('a clock earlier than the start does not produce negative elapsed time', ()
   const progress = getRecoveryProgress(start, start - hour)
   assert.equal(progress.elapsed, 0)
   assert.equal(progress.remaining, 5 * 60 * 1000)
+})
+
+test('alcohol milestones use their own timeline and group simultaneous entries', () => {
+  const before = getRecoveryProgress(start, start + 336 * hour - 1, alcoholRecovery)
+  const at = getRecoveryProgress(start, start + 336 * hour, alcoholRecovery)
+  const finalEntries = alcoholRecovery.filter((step) => step.hours === 336)
+  assert.ok(finalEntries.length > 1)
+  assert.deepEqual(before.nextSteps, finalEntries)
+  assert.deepEqual(groupRecoverySteps(at.achieved)[0].descriptions, finalEntries.map((step) => step.description))
+  assert.equal(at.achieved.length, alcoholRecovery.length)
+  assert.equal(at.next, undefined)
 })

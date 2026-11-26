@@ -89,3 +89,23 @@ test('concurrent changes and database failures are surfaced', async () => {
   await assert.rejects(resetRecovery(client, userId, timestamp), /changed on another device/)
   await assert.rejects(loadRecovery(client, userId, () => null), /Database unavailable/)
 })
+
+test('alcohol records use a separate table and never import smoking browser data', async () => {
+  const { client, requests } = clientWithResponses([
+    { body: [] },
+    { body: [{ started_at: timestamp }] },
+    { body: [{ started_at: null }] },
+  ])
+  const record = await loadRecovery(client, userId, () => { throw new Error('Unexpected legacy read') }, 'alcohol_recovery')
+  const started = await startRecovery(client, userId, record, timestamp, 'alcohol_recovery')
+  await resetRecovery(client, userId, started.started_at, 'alcohol_recovery')
+  assert.ok(requests.every((request) => request.url.pathname.endsWith('/alcohol_recovery')))
+})
+
+test('starting over updates only the previously loaded start time', async () => {
+  const { client, requests } = clientWithResponses([{ body: [{ started_at: timestamp }] }, { body: [] }])
+  const previous = '2026-11-20T12:00:00.000Z'
+  await startRecovery(client, userId, { started_at: previous }, timestamp, 'alcohol_recovery')
+  assert.equal(requests[0].url.searchParams.get('started_at'), `eq.${previous}`)
+  await assert.rejects(startRecovery(client, userId, { started_at: previous }, timestamp, 'alcohol_recovery'), /changed on another device/)
+})

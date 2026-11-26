@@ -32,7 +32,7 @@ function AppNavbar() {
               Warehouse
             </Nav.Link>
             <Nav.Link as={NavLink} to="/smoking-recovery">
-              Smoking Recovery
+              Recovery
             </Nav.Link>
           </Nav>
         </Navbar.Collapse>

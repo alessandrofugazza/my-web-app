@@ -4,14 +4,18 @@ import Badge from 'react-bootstrap/Badge'
 import Button from 'react-bootstrap/Button'
 import Card from 'react-bootstrap/Card'
 import Col from 'react-bootstrap/Col'
+import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
 import Row from 'react-bootstrap/Row'
 import Spinner from 'react-bootstrap/Spinner'
 import { useAuth } from '../AuthContext'
 import { supabase } from '../supabase'
+import alcoholRecovery from './alcoholRecoveryData'
+import smokingRecovery from './smokingRecoveryData'
 import { getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData'
 import { loadRecovery, resetRecovery, startRecovery } from './smokingRecoveryStorage'
 import type { RecoveryRecord } from './smokingRecoveryStorage'
+import { parseRecoveryDate } from './recoveryDate'
 
 function formatDuration(milliseconds: number) {
   let seconds = Math.max(0, Math.floor(milliseconds / 1000))
@@ -36,20 +40,27 @@ function milestoneTime(hours: number) {
   return `${hours} hours`
 }
 
-function SmokingRecovery() {
+function RecoveryTracker({ kind }: { kind: 'smoking' | 'alcohol' }) {
   const { session } = useAuth()
   const userId = session?.user.id
+  const table = kind === 'smoking' ? 'smoking_recovery' : 'alcohol_recovery'
+  const label = kind === 'smoking' ? 'Smoke' : 'Alcohol'
+  const steps = kind === 'smoking' ? smokingRecovery : alcoholRecovery
   const [loaded, setLoaded] = useState<{ userId: string; record: RecoveryRecord | null } | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [revision, setRevision] = useState(0)
   const [showReset, setShowReset] = useState(false)
+  const [showStart, setShowStart] = useState(false)
+  const [customDate, setCustomDate] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [dateError, setDateError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!userId) return
     let active = true
-    loadRecovery(supabase, userId, () => localStorage.getItem(`smoking-recovery-start:${userId}`))
+    loadRecovery(supabase, userId, () => localStorage.getItem(`smoking-recovery-start:${userId}`), table)
       .then((record) => {
         if (!active) return
         setLoaded({ userId, record })
@@ -62,7 +73,7 @@ function SmokingRecovery() {
         setError(`Could not load recovery progress: ${reason instanceof Error ? reason.message : String(reason)}`)
       })
     return () => { active = false }
-  }, [userId, revision])
+  }, [userId, revision, table])
 
   const isLoaded = loaded !== null && loaded.userId === userId
   const record = isLoaded ? loaded.record : null
@@ -76,14 +87,23 @@ function SmokingRecovery() {
 
   async function start() {
     if (!userId || !isLoaded) return
+    let timestamp: number
+    try {
+      timestamp = customDate ? parseRecoveryDate(startDate, Date.now()) : Date.now()
+    } catch (reason) {
+      setDateError(reason instanceof Error ? reason.message : String(reason))
+      return
+    }
     setSaving(true)
     setError(null)
     try {
-      const next = await startRecovery(supabase, userId, record, new Date().toISOString())
+      const next = await startRecovery(supabase, userId, record, new Date(timestamp).toISOString(), table)
       setLoaded({ userId, record: next })
       setNow(Date.now())
+      setShowStart(false)
     } catch (reason) {
       setError(`Could not start recovery: ${reason instanceof Error ? reason.message : String(reason)}`)
+      setShowStart(false)
     } finally {
       setSaving(false)
     }
@@ -94,7 +114,7 @@ function SmokingRecovery() {
     setSaving(true)
     setError(null)
     try {
-      const next = await resetRecovery(supabase, userId, record.started_at)
+      const next = await resetRecovery(supabase, userId, record.started_at, table)
       setLoaded({ userId, record: next })
       setShowReset(false)
     } catch (reason) {
@@ -111,23 +131,19 @@ function SmokingRecovery() {
     setRevision((value) => value + 1)
   }
 
-  const progress = startedAt === null ? null : getRecoveryProgress(startedAt, now)
+  const progress = startedAt === null ? null : getRecoveryProgress(startedAt, now, steps)
   const achievedGroups = progress ? groupRecoverySteps(progress.achieved) : []
 
   return (
-    <div className="pb-5">
-      <h1>Smoking Recovery</h1>
-      <p className="text-body-secondary">
-        Track your smoke-free time and explore the milestones ahead.
-      </p>
+    <div>
       {error && (
         <Alert variant="danger" role="alert">
           {error} <Button variant="link" onClick={reload} disabled={saving}>Reload progress</Button>
         </Alert>
       )}
       <div className="d-flex gap-2 flex-wrap mb-4">
-        <Button onClick={start} disabled={!isLoaded || saving || startedAt !== null}>
-          Start smoke-free journey
+        <Button onClick={() => { setCustomDate(false); setStartDate(''); setDateError(null); setShowStart(true) }} disabled={!isLoaded || saving}>
+          {startedAt === null ? `Start ${label.toLowerCase()}-free journey` : 'Start over'}
         </Button>
         <Button variant="outline-danger" onClick={() => setShowReset(true)} disabled={!isLoaded || saving || startedAt === null}>
           Reset
@@ -140,7 +156,7 @@ function SmokingRecovery() {
         <Card>
           <Card.Body>
             <Card.Title>Ready when you are</Card.Title>
-            <Card.Text>Start when you stop smoking. Your progress is saved to your account.</Card.Text>
+            <Card.Text>Start your journey. Your progress is saved to your account.</Card.Text>
           </Card.Body>
         </Card>
       ) : progress && (
@@ -149,7 +165,7 @@ function SmokingRecovery() {
             <Col md={5}>
               <Card className="h-100">
                 <Card.Body>
-                  <Card.Title>Smoke-free time</Card.Title>
+                  <Card.Title>{label}-free time</Card.Title>
                   <p className="fs-2 fw-bold mb-1">{formatDuration(progress.elapsed)}</p>
                   <p className="text-body-secondary mb-0">Started {new Date(startedAt).toLocaleString()}</p>
                 </Card.Body>
@@ -196,6 +212,50 @@ function SmokingRecovery() {
           <Button variant="danger" onClick={reset} disabled={saving}>{saving ? 'Resetting…' : 'Reset journey'}</Button>
         </Modal.Footer>
       </Modal>
+      <Modal show={showStart} onHide={() => !saving && setShowStart(false)} centered>
+        <Form onSubmit={(event) => { event.preventDefault(); void start() }}>
+          <Modal.Header closeButton={!saving}>
+            <Modal.Title>{startedAt === null ? 'Start your journey' : 'Start over?'}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {startedAt !== null && <p>This replaces your current {kind} start time on all devices.</p>}
+            <Form.Check
+              type="radio" name={`${kind}-start-option`} id={`${kind}-start-now`}
+              label="Start now" checked={!customDate} onChange={() => { setCustomDate(false); setDateError(null) }}
+            />
+            <Form.Check
+              type="radio" name={`${kind}-start-option`} id={`${kind}-start-past`}
+              label="Choose a past date and time" checked={customDate} onChange={() => setCustomDate(true)}
+            />
+            {customDate && (
+              <Form.Group className="mt-3" controlId={`${kind}-start-date`}>
+                <Form.Label>Start date and time (your local time)</Form.Label>
+                <Form.Control type="datetime-local" value={startDate} onChange={(event) => setStartDate(event.target.value)} required />
+              </Form.Group>
+            )}
+            {dateError && <p className="text-danger mt-2 mb-0" role="alert">{dateError}</p>}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowStart(false)} disabled={saving}>Cancel</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save start time'}</Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+    </div>
+  )
+}
+
+function SmokingRecovery() {
+  const [kind, setKind] = useState<'smoking' | 'alcohol'>('smoking')
+  return (
+    <div className="pb-5">
+      <h1>Recovery</h1>
+      <p className="text-body-secondary">Track your progress and explore the milestones ahead.</p>
+      <div className="d-flex gap-2 mb-4" role="group" aria-label="Recovery tracker">
+        <Button variant={kind === 'smoking' ? 'primary' : 'outline-primary'} aria-pressed={kind === 'smoking'} onClick={() => setKind('smoking')}>Smoking</Button>
+        <Button variant={kind === 'alcohol' ? 'primary' : 'outline-primary'} aria-pressed={kind === 'alcohol'} onClick={() => setKind('alcohol')}>Alcohol</Button>
+      </div>
+      <RecoveryTracker key={kind} kind={kind} />
     </div>
   )
 }
