@@ -10,6 +10,8 @@ import Modal from 'react-bootstrap/Modal'
 import Row from 'react-bootstrap/Row'
 import Spinner from 'react-bootstrap/Spinner'
 import Table from 'react-bootstrap/Table'
+import Toast from 'react-bootstrap/Toast'
+import ToastContainer from 'react-bootstrap/ToastContainer'
 import { useAuth } from '../AuthContext'
 import { PencilIcon, TrashIcon } from '../components/Icons'
 import type { Building, ContainerType, Room, WarehouseContainer, WarehouseItem } from '../types/warehouse'
@@ -97,7 +99,7 @@ function Warehouse() {
   const [editLocation, setEditLocation] = useState<EditLocation | null>(null)
 
   const warehouse = useWarehouse(userId, { search: debouncedSearch, ...filterLocation, page })
-  const { buildings, rooms, containers, containerTypes, items, count, pageSize, loadingLists, loadingItems, saving, error, setError, mutate } = warehouse
+  const { buildings, rooms, containers, containerTypes, items, count, pageSize, loadingLists, loadingItems, saving, error, setError, mutate, notifications, dismissNotification } = warehouse
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search), 300)
@@ -243,6 +245,22 @@ function Warehouse() {
 
   return (
     <div className="my-4">
+      <ToastContainer position="bottom-end" className="position-fixed p-3" style={{ zIndex: 1100 }}>
+        {notifications.map((notification) => (
+          <Toast
+            key={notification.id}
+            bg={notification.variant}
+            autohide={notification.variant === 'success'}
+            delay={5000}
+            onClose={() => dismissNotification(notification.id)}
+          >
+            <Toast.Body className="text-white d-flex justify-content-between align-items-start gap-3">
+              <span>{notification.message}</span>
+              <button type="button" className="btn-close btn-close-white" aria-label="Dismiss notification" onClick={() => dismissNotification(notification.id)} />
+            </Toast.Body>
+          </Toast>
+        ))}
+      </ToastContainer>
       <h1 className="mb-4 text-center">Warehouse</h1>
       {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
 

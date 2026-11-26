@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import type { Building, ContainerType, Room, WarehouseContainer, WarehouseItem } from '../types/warehouse'
 
@@ -7,6 +7,27 @@ const LIST_PAGE_SIZE = 500
 type ListTable = 'warehouse_buildings' | 'warehouse_rooms' | 'warehouse_containers' | 'warehouse_container_types'
 type Table = ListTable | 'warehouse_items'
 type Values = Record<string, string | number | null>
+type Operation = 'insert' | 'update' | 'delete'
+
+interface Notification {
+  id: number
+  variant: 'success' | 'danger'
+  message: string
+}
+
+const tableNames: Record<Table, string> = {
+  warehouse_buildings: 'Building',
+  warehouse_rooms: 'Room',
+  warehouse_containers: 'Container',
+  warehouse_container_types: 'Container type',
+  warehouse_items: 'Item',
+}
+
+const operationNames: Record<Operation, string> = {
+  insert: 'added',
+  update: 'updated',
+  delete: 'deleted',
+}
 
 interface Filters {
   search: string
@@ -38,6 +59,8 @@ export function useWarehouse(userId: string, filters: Filters) {
   const [loadedItemKey, setLoadedItemKey] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const notificationId = useRef(0)
   const [listRevision, setListRevision] = useState(0)
   const [itemRevision, setItemRevision] = useState(0)
 
@@ -92,36 +115,57 @@ export function useWarehouse(userId: string, filters: Filters) {
     return () => { active = false }
   }, [userId, search, buildingId, roomId, containerId, page, itemKey])
 
-  const mutate = useCallback(async (table: Table, operation: 'insert' | 'update' | 'delete', values: Values, id?: string) => {
+  const notify = useCallback((variant: Notification['variant'], message: string) => {
+    const id = ++notificationId.current
+    setNotifications((current) => [...current, { id, variant, message }])
+  }, [])
+
+  const dismissNotification = useCallback((id: number) => {
+    setNotifications((current) => current.filter((notification) => notification.id !== id))
+  }, [])
+
+  const mutate = useCallback(async (table: Table, operation: Operation, values: Values, id?: string) => {
     setSaving(true)
     setError(null)
-    const base = supabase.from(table)
-    const query = operation === 'insert'
-      ? base.insert({ ...values, user_id: userId })
-      : operation === 'update'
-        ? base.update(values).eq('id', id ?? '').eq('user_id', userId)
-        : base.delete().eq('id', id ?? '').eq('user_id', userId)
-    const { error: mutationError } = await query.select('id').single()
-    setSaving(false)
-    if (mutationError) {
-      const detail = mutationError.code === '23503'
-        ? 'This location or container type is still in use. Remove or reassign its dependent records first.'
-        : mutationError.code === '23505' && table === 'warehouse_containers' && mutationError.message.includes('name')
-          ? 'A container with this name already exists. Choose a different name.'
-          : mutationError.message
-      setError(`Could not ${operation} ${table.replace('warehouse_', '')}: ${detail}`)
+    try {
+      const base = supabase.from(table)
+      const query = operation === 'insert'
+        ? base.insert({ ...values, user_id: userId })
+        : operation === 'update'
+          ? base.update(values).eq('id', id ?? '').eq('user_id', userId)
+          : base.delete().eq('id', id ?? '').eq('user_id', userId)
+      const { error: mutationError } = await query.select('id').single()
+      if (mutationError) {
+        const detail = mutationError.code === '23503'
+          ? 'This location or container type is still in use. Remove or reassign its dependent records first.'
+          : mutationError.code === '23505' && table === 'warehouse_containers' && mutationError.message.includes('name')
+            ? 'A container with this name already exists. Choose a different name.'
+            : mutationError.message
+        const message = `Could not ${operation} ${table.replace('warehouse_', '')}: ${detail}`
+        setError(message)
+        notify('danger', message)
+        return false
+      }
+      if (table !== 'warehouse_items') setListRevision((value) => value + 1)
+      if (table === 'warehouse_items' || (operation === 'update' && (table === 'warehouse_rooms' || table === 'warehouse_containers'))) {
+        setItemRevision((value) => value + 1)
+      }
+      notify('success', `${tableNames[table]} ${operationNames[operation]} successfully.`)
+      return true
+    } catch (reason: unknown) {
+      const detail = reason instanceof Error ? reason.message : String(reason)
+      const message = `Could not ${operation} ${table.replace('warehouse_', '')}: ${detail}`
+      setError(message)
+      notify('danger', message)
       return false
+    } finally {
+      setSaving(false)
     }
-    if (table !== 'warehouse_items') setListRevision((value) => value + 1)
-    if (table === 'warehouse_items' || (operation === 'update' && (table === 'warehouse_rooms' || table === 'warehouse_containers'))) {
-      setItemRevision((value) => value + 1)
-    }
-    return true
-  }, [userId])
+  }, [userId, notify])
 
   return {
     buildings, rooms, containers, containerTypes, items, count, pageSize: PAGE_SIZE,
     loadingLists: loadedListKey !== listKey, loadingItems: loadedItemKey !== itemKey,
-    saving, error, setError, mutate,
+    saving, error, setError, mutate, notifications, dismissNotification,
   }
 }
