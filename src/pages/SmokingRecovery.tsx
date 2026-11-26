@@ -12,27 +12,11 @@ import { useAuth } from '../AuthContext'
 import { supabase } from '../supabase'
 import alcoholRecovery from './alcoholRecoveryData'
 import smokingRecovery from './smokingRecoveryData'
-import { formatMilestoneAgo, getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData'
+import { formatDuration, formatMilestoneAgo, getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData'
 import type { RecoveryStep } from './smokingRecoveryData'
 import { loadRecovery, resetRecovery, startRecovery } from './smokingRecoveryStorage'
 import type { RecoveryRecord } from './smokingRecoveryStorage'
 import { parseRecoveryDate } from './recoveryDate'
-
-function formatDuration(milliseconds: number) {
-  let seconds = Math.max(0, Math.floor(milliseconds / 1000))
-  const days = Math.floor(seconds / 86400)
-  seconds %= 86400
-  const hours = Math.floor(seconds / 3600)
-  seconds %= 3600
-  const minutes = Math.floor(seconds / 60)
-  seconds %= 60
-  return [
-    ...(days ? [`${days}d`] : []),
-    ...(days || hours ? [`${hours}h`] : []),
-    ...(days || hours || minutes ? [`${minutes}m`] : []),
-    `${seconds}s`,
-  ].join(' ')
-}
 
 function milestoneTime(hours: number) {
   if (hours === 0) return 'Start'

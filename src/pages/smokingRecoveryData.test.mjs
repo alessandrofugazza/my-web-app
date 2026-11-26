@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import smokingRecovery, { formatMilestoneAgo, getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData.ts'
+import smokingRecovery, { formatDuration, formatMilestoneAgo, getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData.ts'
 import alcoholRecovery from './alcoholRecoveryData.ts'
 
 const hour = 60 * 60 * 1000
 const start = 1_000_000
+
+test('duration displays seconds with two digits', () => {
+  assert.equal(formatDuration((18 * 60 + 9) * 1000), '18m 09s')
+  assert.equal(formatDuration(0), '00s')
+  assert.equal(formatDuration((60 * 60 + 10) * 1000), '1h 0m 10s')
+})
 
 test('all starting entries are reached and the next countdown uses 5 minutes', () => {
   const progress = getRecoveryProgress(start, start)

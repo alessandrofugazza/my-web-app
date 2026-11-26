@@ -393,6 +393,22 @@ const smokingRecovery: RecoveryStep[] = [
 
 const millisecondsPerHour = 60 * 60 * 1000
 
+export function formatDuration(milliseconds: number) {
+  let seconds = Math.max(0, Math.floor(milliseconds / 1000))
+  const days = Math.floor(seconds / 86400)
+  seconds %= 86400
+  const hours = Math.floor(seconds / 3600)
+  seconds %= 3600
+  const minutes = Math.floor(seconds / 60)
+  seconds %= 60
+  return [
+    ...(days ? [`${days}d`] : []),
+    ...(days || hours ? [`${hours}h`] : []),
+    ...(days || hours || minutes ? [`${minutes}m`] : []),
+    `${String(seconds).padStart(2, '0')}s`,
+  ].join(' ')
+}
+
 export function formatMilestoneAgo(elapsed: number, milestoneHours: number) {
   const minutes = Math.floor(Math.max(0, elapsed - milestoneHours * millisecondsPerHour) / 60000)
   if (minutes === 0) return 'just now'
