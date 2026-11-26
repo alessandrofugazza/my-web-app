@@ -4,8 +4,12 @@
 
 Signed-in users can start a smoke-free timer from the Smoking Recovery page,
 see reached milestones and the countdown to the next one, or reset the timer.
-The start time is stored only in the current browser on the current device,
-separately for each signed-in account; clearing browser storage removes it.
+Run `supabase/migrations/20261126140000_smoking_recovery.sql` in the Supabase SQL
+editor (or apply it with the Supabase CLI) before using the page. The start
+time is saved to the signed-in account and is available across devices. If the
+account has no recovery record, visiting the page in a browser with an older
+local start time imports it. An account's existing record, including a reset,
+takes precedence over old browser data.
 The two-week timeline is approximate and is not medical advice.
 
 ## Warehouse setup

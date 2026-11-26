@@ -6,8 +6,12 @@ import Card from 'react-bootstrap/Card'
 import Col from 'react-bootstrap/Col'
 import Modal from 'react-bootstrap/Modal'
 import Row from 'react-bootstrap/Row'
+import Spinner from 'react-bootstrap/Spinner'
 import { useAuth } from '../AuthContext'
+import { supabase } from '../supabase'
 import { getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData'
+import { loadRecovery, resetRecovery, startRecovery } from './smokingRecoveryStorage'
+import type { RecoveryRecord } from './smokingRecoveryStorage'
 
 function formatDuration(milliseconds: number) {
   let seconds = Math.max(0, Math.floor(milliseconds / 1000))
@@ -34,36 +38,35 @@ function milestoneTime(hours: number) {
 
 function SmokingRecovery() {
   const { session } = useAuth()
-  const storageKey = `smoking-recovery-start:${session?.user.id}`
-  const [startedAt, setStartedAt] = useState<number | null>(null)
+  const userId = session?.user.id
+  const [loaded, setLoaded] = useState<{ userId: string; record: RecoveryRecord | null } | null>(null)
   const [now, setNow] = useState(() => Date.now())
-  const [storageError, setStorageError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [revision, setRevision] = useState(0)
   const [showReset, setShowReset] = useState(false)
 
   useEffect(() => {
-    function loadStart() {
-      try {
-        const saved = localStorage.getItem(storageKey)
-        const timestamp = saved === null ? null : Number(saved)
-        if (timestamp !== null && (!Number.isFinite(timestamp) || timestamp <= 0)) {
-          setStorageError('The saved start time is invalid. Reset it to start again.')
-          setStartedAt(null)
-          return
-        }
-        setStartedAt(timestamp)
-        setStorageError(null)
-      } catch {
-        setStorageError('Your browser storage is unavailable. Progress cannot be loaded or saved.')
-      }
-    }
+    if (!userId) return
+    let active = true
+    loadRecovery(supabase, userId, () => localStorage.getItem(`smoking-recovery-start:${userId}`))
+      .then((record) => {
+        if (!active) return
+        setLoaded({ userId, record })
+        setNow(Date.now())
+        setError(null)
+      })
+      .catch((reason: unknown) => {
+        if (!active) return
+        setLoaded(null)
+        setError(`Could not load recovery progress: ${reason instanceof Error ? reason.message : String(reason)}`)
+      })
+    return () => { active = false }
+  }, [userId, revision])
 
-    loadStart()
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === storageKey || event.key === null) loadStart()
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [storageKey])
+  const isLoaded = loaded !== null && loaded.userId === userId
+  const record = isLoaded ? loaded.record : null
+  const startedAt = record?.started_at ? Date.parse(record.started_at) : null
 
   useEffect(() => {
     if (startedAt === null) return
@@ -71,28 +74,41 @@ function SmokingRecovery() {
     return () => window.clearInterval(timer)
   }, [startedAt])
 
-  function start() {
-    const timestamp = Date.now()
+  async function start() {
+    if (!userId || !isLoaded) return
+    setSaving(true)
+    setError(null)
     try {
-      localStorage.setItem(storageKey, String(timestamp))
-      setStartedAt(timestamp)
-      setNow(timestamp)
-      setStorageError(null)
-    } catch {
-      setStorageError('Your browser storage is unavailable. Progress could not be saved.')
+      const next = await startRecovery(supabase, userId, record, new Date().toISOString())
+      setLoaded({ userId, record: next })
+      setNow(Date.now())
+    } catch (reason) {
+      setError(`Could not start recovery: ${reason instanceof Error ? reason.message : String(reason)}`)
+    } finally {
+      setSaving(false)
     }
   }
 
-  function reset() {
+  async function reset() {
+    if (!userId || !record?.started_at) return
+    setSaving(true)
+    setError(null)
     try {
-      localStorage.removeItem(storageKey)
-      setStartedAt(null)
-      setStorageError(null)
+      const next = await resetRecovery(supabase, userId, record.started_at)
+      setLoaded({ userId, record: next })
       setShowReset(false)
-    } catch {
-      setStorageError('Your browser storage is unavailable. Progress could not be reset.')
+    } catch (reason) {
+      setError(`Could not reset recovery: ${reason instanceof Error ? reason.message : String(reason)}`)
       setShowReset(false)
+    } finally {
+      setSaving(false)
     }
+  }
+
+  function reload() {
+    setLoaded(null)
+    setError(null)
+    setRevision((value) => value + 1)
   }
 
   const progress = startedAt === null ? null : getRecoveryProgress(startedAt, now)
@@ -104,21 +120,27 @@ function SmokingRecovery() {
       <p className="text-body-secondary">
         Track your smoke-free time and explore the milestones ahead.
       </p>
-      {storageError && <Alert variant="danger" role="alert">{storageError}</Alert>}
+      {error && (
+        <Alert variant="danger" role="alert">
+          {error} <Button variant="link" onClick={reload} disabled={saving}>Reload progress</Button>
+        </Alert>
+      )}
       <div className="d-flex gap-2 flex-wrap mb-4">
-        <Button onClick={start} disabled={startedAt !== null || storageError !== null}>
+        <Button onClick={start} disabled={!isLoaded || saving || startedAt !== null}>
           Start smoke-free journey
         </Button>
-        <Button variant="outline-danger" onClick={() => setShowReset(true)} disabled={startedAt === null && storageError === null}>
+        <Button variant="outline-danger" onClick={() => setShowReset(true)} disabled={!isLoaded || saving || startedAt === null}>
           Reset
         </Button>
       </div>
 
-      {startedAt === null ? (
+      {!isLoaded ? (
+        !error && <div><Spinner animation="border" size="sm" role="status" /> Loading progress…</div>
+      ) : startedAt === null ? (
         <Card>
           <Card.Body>
             <Card.Title>Ready when you are</Card.Title>
-            <Card.Text>Start when you stop smoking. Your progress is saved only in this browser on this device.</Card.Text>
+            <Card.Text>Start when you stop smoking. Your progress is saved to your account.</Card.Text>
           </Card.Body>
         </Card>
       ) : progress && (
@@ -168,10 +190,10 @@ function SmokingRecovery() {
 
       <Modal show={showReset} onHide={() => setShowReset(false)} centered>
         <Modal.Header closeButton><Modal.Title>Reset your journey?</Modal.Title></Modal.Header>
-        <Modal.Body>This removes the saved start time from this browser. You can start again afterwards.</Modal.Body>
+        <Modal.Body>This resets the saved start time for your account on all devices. You can start again afterwards.</Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowReset(false)}>Cancel</Button>
-          <Button variant="danger" onClick={reset}>Reset journey</Button>
+          <Button variant="secondary" onClick={() => setShowReset(false)} disabled={saving}>Cancel</Button>
+          <Button variant="danger" onClick={reset} disabled={saving}>{saving ? 'Resetting…' : 'Reset journey'}</Button>
         </Modal.Footer>
       </Modal>
     </div>
