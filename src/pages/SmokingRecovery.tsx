@@ -12,7 +12,7 @@ import { useAuth } from '../AuthContext'
 import { supabase } from '../supabase'
 import alcoholRecovery from './alcoholRecoveryData'
 import smokingRecovery from './smokingRecoveryData'
-import { getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData'
+import { formatMilestoneAgo, getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData'
 import { loadRecovery, resetRecovery, startRecovery } from './smokingRecoveryStorage'
 import type { RecoveryRecord } from './smokingRecoveryStorage'
 import { parseRecoveryDate } from './recoveryDate'
@@ -195,6 +195,7 @@ function RecoveryTracker({ kind }: { kind: 'smoking' | 'alcohol' }) {
             {achievedGroups.map((group) => (
               <div className="list-group-item" key={group.hours}>
                 <strong>{milestoneTime(group.hours)}</strong>
+                <span className="text-body-secondary"> · {formatMilestoneAgo(progress.elapsed, group.hours)}</span>
                 <ul className="mb-0 mt-1">
                   {group.descriptions.map((description, index) => <li key={index}>{description}</li>)}
                 </ul>

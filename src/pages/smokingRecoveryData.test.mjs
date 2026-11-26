@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import smokingRecovery, { getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData.ts'
+import smokingRecovery, { formatMilestoneAgo, getRecoveryProgress, groupRecoverySteps } from './smokingRecoveryData.ts'
 import alcoholRecovery from './alcoholRecoveryData.ts'
 
 const hour = 60 * 60 * 1000
@@ -51,4 +51,12 @@ test('alcohol milestones use their own timeline and group simultaneous entries',
   assert.deepEqual(groupRecoverySteps(at.achieved)[0].descriptions, finalEntries.map((step) => step.description))
   assert.equal(at.achieved.length, alcoholRecovery.length)
   assert.equal(at.next, undefined)
+})
+
+test('reached milestone times show how long ago each milestone was reached', () => {
+  assert.equal(formatMilestoneAgo(20 * 60_000, 20 / 60), 'just now')
+  assert.equal(formatMilestoneAgo(21 * 60_000, 20 / 60), '1 minute ago')
+  assert.equal(formatMilestoneAgo(2 * hour, 1), '1 hour ago')
+  assert.equal(formatMilestoneAgo(3 * hour + 2 * 60_000, 1), '2 hours 2 minutes ago')
+  assert.equal(formatMilestoneAgo(337 * hour, 0), '337 hours ago')
 })

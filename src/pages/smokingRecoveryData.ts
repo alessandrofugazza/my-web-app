@@ -380,6 +380,18 @@ const smokingRecovery = [
 
 const millisecondsPerHour = 60 * 60 * 1000
 
+export function formatMilestoneAgo(elapsed: number, milestoneHours: number) {
+  const minutes = Math.floor(Math.max(0, elapsed - milestoneHours * millisecondsPerHour) / 60000)
+  if (minutes === 0) return 'just now'
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  const parts = [
+    ...(hours ? [`${hours} ${hours === 1 ? 'hour' : 'hours'}`] : []),
+    ...(remainingMinutes ? [`${remainingMinutes} ${remainingMinutes === 1 ? 'minute' : 'minutes'}`] : []),
+  ]
+  return `${parts.join(' ')} ago`
+}
+
 export function groupRecoverySteps(steps: typeof smokingRecovery) {
   const groups = new Map<number, string[]>()
   for (const step of steps) {
