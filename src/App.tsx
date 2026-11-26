@@ -12,6 +12,7 @@ import Progress from './pages/Progress'
 import Topics from './pages/Topics'
 import Books from './pages/Books'
 import Warehouse from './pages/Warehouse'
+import SmokingRecovery from './pages/SmokingRecovery'
 
 function App() {
   return (
@@ -58,6 +59,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Warehouse />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/smoking-recovery"
+              element={
+                <ProtectedRoute>
+                  <SmokingRecovery />
                 </ProtectedRoute>
               }
             />

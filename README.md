@@ -1,5 +1,13 @@
 # my-web-app
 
+## Smoking recovery
+
+Signed-in users can start a smoke-free timer from the Smoking Recovery page,
+see reached milestones and the countdown to the next one, or reset the timer.
+The start time is stored only in the current browser on the current device,
+separately for each signed-in account; clearing browser storage removes it.
+The two-week timeline is approximate and is not medical advice.
+
 ## Warehouse setup
 
 Run the warehouse migrations in `supabase/migrations` in timestamp order in the

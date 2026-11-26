@@ -31,6 +31,9 @@ function AppNavbar() {
             <Nav.Link as={NavLink} to="/warehouse">
               Warehouse
             </Nav.Link>
+            <Nav.Link as={NavLink} to="/smoking-recovery">
+              Smoking Recovery
+            </Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Container>
