@@ -93,6 +93,7 @@ function Warehouse() {
   const [newTypeName, setNewTypeName] = useState('')
   const [newContainerType, setNewContainerType] = useState('')
   const [itemName, setItemName] = useState('')
+  const [itemNumber, setItemNumber] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [notes, setNotes] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -109,6 +110,7 @@ function Warehouse() {
   function resetItemForm(keepLocation = false) {
     setEditingId(null)
     setItemName('')
+    setItemNumber('')
     setQuantity('1')
     setNotes('')
     if (!keepLocation) setFormLocation(emptyLocation)
@@ -125,7 +127,7 @@ function Warehouse() {
       return
     }
     const success = await mutate('warehouse_items', editingId ? 'update' : 'insert', {
-      name: itemName.trim(), quantity: Number(quantity), notes: notes.trim() || null,
+      name: itemName.trim(), number: itemNumber === '' ? null : Number(itemNumber), quantity: Number(quantity), notes: notes.trim() || null,
       building_id: formLocation.buildingId, room_id: formLocation.roomId, container_id: formLocation.containerId,
     }, editingId ?? undefined)
     if (success) {
@@ -137,6 +139,7 @@ function Warehouse() {
   function editItem(item: WarehouseItem) {
     setEditingId(item.id)
     setItemName(item.name)
+    setItemNumber(item.number === null ? '' : String(item.number))
     setQuantity(String(item.quantity))
     setNotes(item.notes ?? '')
     setFormLocation({ buildingId: item.building_id, roomId: item.room_id, containerId: item.container_id })
@@ -415,7 +418,8 @@ function Warehouse() {
         <Card.Body>
           <Form onSubmit={saveItem}>
             <Row className="g-3">
-              <Col md={8}><Form.Group controlId="warehouse-name"><Form.Label>Item name</Form.Label><Form.Control required maxLength={200} value={itemName} onChange={(e) => setItemName(e.target.value)} /></Form.Group></Col>
+              <Col md={4}><Form.Group controlId="warehouse-name"><Form.Label>Item name</Form.Label><Form.Control required maxLength={200} value={itemName} onChange={(e) => setItemName(e.target.value)} /></Form.Group></Col>
+              <Col md={4}><Form.Group controlId="warehouse-number"><Form.Label>Item number (optional)</Form.Label><Form.Control type="number" min={0} max={2147483647} step={1} value={itemNumber} onChange={(e) => setItemNumber(e.target.value)} /><Form.Text>Must be unique in your warehouse.</Form.Text></Form.Group></Col>
               <Col md={4}><Form.Group controlId="warehouse-quantity"><Form.Label>Quantity</Form.Label><Form.Control type="number" required min={0} max={2147483647} step={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} /></Form.Group></Col>
               <Col xs={12}><Form.Group controlId="warehouse-notes"><Form.Label>Notes (optional)</Form.Label><Form.Control as="textarea" rows={2} maxLength={2000} value={notes} onChange={(e) => setNotes(e.target.value)} /></Form.Group></Col>
               <LocationFields prefix="item" location={formLocation} onChange={setFormLocation} buildings={buildings} rooms={rooms} containers={containers} containerTypes={containerTypes} required />
@@ -440,9 +444,9 @@ function Warehouse() {
               <p className="text-secondary">{count} {count === 1 ? 'item' : 'items'} found</p>
               {items.length === 0 ? <p>No items match these filters.</p> : (
                 <Table responsive striped hover>
-                  <thead><tr><th>Item</th><th>Quantity</th><th>Building</th><th>Room</th><th>Container</th><th><span className="visually-hidden">Actions</span></th></tr></thead>
+                  <thead><tr><th>Item</th><th>Number</th><th>Quantity</th><th>Building</th><th>Room</th><th>Container</th><th><span className="visually-hidden">Actions</span></th></tr></thead>
                   <tbody>{items.map((item) => <tr key={item.id}>
-                    <td className="text-break">{item.name}{item.notes && <div className="small text-secondary" style={{ whiteSpace: 'pre-wrap' }}>{item.notes}</div>}</td><td>{item.quantity}</td>
+                    <td className="text-break">{item.name}{item.notes && <div className="small text-secondary" style={{ whiteSpace: 'pre-wrap' }}>{item.notes}</div>}</td><td>{item.number ?? '—'}</td><td>{item.quantity}</td>
                     <td>{names.building.get(item.building_id) ?? 'Unavailable'}</td>
                     <td>{names.room.get(item.room_id) ?? 'Unavailable'}</td>
                     <td>{(() => { const container = names.container.get(item.container_id); return container ? `${container.name} (#${container.number}) - ${container.type_id ? names.type.get(container.type_id) ?? 'Unavailable' : 'Type not assigned'}` : 'Unavailable' })()}</td>

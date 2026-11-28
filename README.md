@@ -32,6 +32,8 @@ in the location manager. A type in use cannot be deleted. Buildings, rooms,
 containers and types can be edited; moving a room or container also moves its
 contents. Database changes show a green success or red failure notification.
 Add inventory to a container with a non-negative whole-number
-quantity. Items can be edited, deleted, searched by name, and filtered by
-location; inventory results are paginated on the server. Locations cannot be
+quantity. Each inventory entry can optionally have a non-negative whole-number
+item number, which must be unique within the user's warehouse, regardless of
+quantity or location. Items can be edited, deleted, searched by name, and
+filtered by location; inventory results are paginated on the server. Locations cannot be
 deleted while they contain other locations or items.

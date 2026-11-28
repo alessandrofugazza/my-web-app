@@ -26,6 +26,7 @@ export interface ContainerType {
 export interface WarehouseItem {
   id: string
   name: string
+  number: number | null
   quantity: number
   notes: string | null
   building_id: string

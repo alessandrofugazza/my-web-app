@@ -138,9 +138,11 @@ export function useWarehouse(userId: string, filters: Filters) {
       if (mutationError) {
         const detail = mutationError.code === '23503'
           ? 'This location or container type is still in use. Remove or reassign its dependent records first.'
-          : mutationError.code === '23505' && table === 'warehouse_containers' && mutationError.message.includes('name')
-            ? 'A container with this name already exists. Choose a different name.'
-            : mutationError.message
+          : mutationError.code === '23505' && table === 'warehouse_items' && mutationError.message.includes('warehouse_items_user_number_key')
+            ? 'An item with this number already exists in your warehouse. Choose a different number.'
+            : mutationError.code === '23505' && table === 'warehouse_containers' && mutationError.message.includes('name')
+              ? 'A container with this name already exists. Choose a different name.'
+              : mutationError.message
         const message = `Could not ${operation} ${table.replace('warehouse_', '')}: ${detail}`
         setError(message)
         notify('danger', message)
