@@ -13,6 +13,7 @@ import Topics from './pages/Topics'
 import Books from './pages/Books'
 import Warehouse from './pages/Warehouse'
 import SmokingRecovery from './pages/SmokingRecovery'
+import ExtensionData from './pages/ExtensionData'
 
 function App() {
   return (
@@ -67,6 +68,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SmokingRecovery />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/extension-data"
+              element={
+                <ProtectedRoute>
+                  <ExtensionData />
                 </ProtectedRoute>
               }
             />

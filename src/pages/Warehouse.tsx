@@ -13,6 +13,7 @@ import Table from 'react-bootstrap/Table'
 import Toast from 'react-bootstrap/Toast'
 import ToastContainer from 'react-bootstrap/ToastContainer'
 import { useAuth } from '../AuthContext'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 import { PencilIcon, TrashIcon } from '../components/Icons'
 import type { Building, ContainerType, Room, WarehouseContainer, WarehouseItem } from '../types/warehouse'
 import { useWarehouse } from './useWarehouse'
@@ -98,6 +99,7 @@ function Warehouse() {
   const [notes, setNotes] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState<EditLocation | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ message: string; action: () => Promise<boolean> } | null>(null)
 
   const warehouse = useWarehouse(userId, { search: debouncedSearch, ...filterLocation, page })
   const { buildings, rooms, containers, containerTypes, items, count, pageSize, loadingLists, loadingItems, saving, error, setError, mutate, notifications, dismissNotification } = warehouse
@@ -147,11 +149,12 @@ function Warehouse() {
   }
 
   async function deleteItem(item: WarehouseItem) {
-    if (!window.confirm(`Delete "${item.name}" from the inventory?`)) return
-    if (await mutate('warehouse_items', 'delete', {}, item.id)) {
+    const success = await mutate('warehouse_items', 'delete', {}, item.id)
+    if (success) {
       if (editingId === item.id) resetItemForm()
       if (page > 0 && items.length === 1) setPage(page - 1)
     }
+    return success
   }
 
   async function addLocation(e: FormEvent, kind: 'building' | 'room' | 'container') {
@@ -181,19 +184,30 @@ function Warehouse() {
   }
 
   async function deleteContainerType(type: ContainerType) {
-    if (!window.confirm(`Delete container type "${type.name}"? Types in use cannot be deleted.`)) return
-    if (await mutate('warehouse_container_types', 'delete', {}, type.id) && newContainerType === type.id) setNewContainerType('')
+    const success = await mutate('warehouse_container_types', 'delete', {}, type.id)
+    if (success && newContainerType === type.id) setNewContainerType('')
+    return success
   }
 
-  async function deleteLocation(kind: 'building' | 'room' | 'container', id: string, label: string) {
-    if (!window.confirm(`Delete ${label}? Locations in use cannot be deleted.`)) return
+  async function deleteLocation(kind: 'building' | 'room' | 'container', id: string) {
     const table = kind === 'building' ? 'warehouse_buildings' : kind === 'room' ? 'warehouse_rooms' : 'warehouse_containers'
-    if (await mutate(table, 'delete', {}, id)) {
+    const success = await mutate(table, 'delete', {}, id)
+    if (success) {
       if (kind === 'building' && manageBuilding === id) { setManageBuilding(''); setManageRoom('') }
       if (kind === 'room' && manageRoom === id) setManageRoom('')
       if (Object.values(filterLocation).includes(id)) { setFilterLocation(emptyLocation); setPage(0) }
       if (Object.values(formLocation).includes(id)) setFormLocation(emptyLocation)
     }
+    return success
+  }
+
+  function requestDelete(message: string, action: () => Promise<boolean>) {
+    setError(null)
+    setPendingDelete({ message, action })
+  }
+
+  async function confirmDelete() {
+    if (pendingDelete && await pendingDelete.action()) setPendingDelete(null)
   }
 
   async function saveLocationEdit(e: FormEvent) {
@@ -275,7 +289,7 @@ function Warehouse() {
             <Button type="submit" disabled={saving || loadingLists}>Add</Button>
           </Form>
           <ListGroup className="warehouse-location-list">
-            {containerTypes.map((type) => <ListGroup.Item key={type.id} className="d-flex justify-content-between align-items-center gap-2"><span className="text-break">{type.name}</span><div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'type', id: type.id, name: type.name })} aria-label={`Edit container type ${type.name}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteContainerType(type)} aria-label={`Delete container type ${type.name}`}>Delete</Button></div></ListGroup.Item>)}
+            {containerTypes.map((type) => <ListGroup.Item key={type.id} className="d-flex justify-content-between align-items-center gap-2"><span className="text-break">{type.name}</span><div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'type', id: type.id, name: type.name })} aria-label={`Edit container type ${type.name}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => requestDelete(`Delete container type "${type.name}"? Types in use cannot be deleted.`, () => deleteContainerType(type))} aria-label={`Delete container type ${type.name}`}>Delete</Button></div></ListGroup.Item>)}
           </ListGroup>
         </Card.Body>
       </Card>
@@ -294,7 +308,7 @@ function Warehouse() {
                 <Button type="submit" disabled={saving || loadingLists}>Add</Button>
               </Form>
               <ListGroup className="warehouse-location-list">
-                {buildings.map((building) => <ListGroup.Item key={building.id} className="d-flex justify-content-between align-items-center gap-2"><span className="text-break">{building.name}</span><div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'building', id: building.id, name: building.name })} aria-label={`Edit building ${building.name}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteLocation('building', building.id, `building "${building.name}"`)} aria-label={`Delete building ${building.name}`}>Delete</Button></div></ListGroup.Item>)}
+                {buildings.map((building) => <ListGroup.Item key={building.id} className="d-flex justify-content-between align-items-center gap-2"><span className="text-break">{building.name}</span><div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'building', id: building.id, name: building.name })} aria-label={`Edit building ${building.name}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => requestDelete(`Delete building "${building.name}"? Locations in use cannot be deleted.`, () => deleteLocation('building', building.id))} aria-label={`Delete building ${building.name}`}>Delete</Button></div></ListGroup.Item>)}
               </ListGroup>
             </Col>
             <Col lg={4}>
@@ -308,7 +322,7 @@ function Warehouse() {
                 <Button type="submit" disabled={saving || loadingLists || !manageBuilding}>Add</Button>
               </Form>
               <ListGroup className="warehouse-location-list">
-                {rooms.filter((room) => room.building_id === manageBuilding).map((room) => <ListGroup.Item key={room.id} className="d-flex justify-content-between align-items-center gap-2"><span className="text-break">{room.name}</span><div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'room', id: room.id, name: room.name, buildingId: room.building_id, originalBuildingId: room.building_id })} aria-label={`Edit room ${room.name}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteLocation('room', room.id, `room "${room.name}"`)} aria-label={`Delete room ${room.name}`}>Delete</Button></div></ListGroup.Item>)}
+                {rooms.filter((room) => room.building_id === manageBuilding).map((room) => <ListGroup.Item key={room.id} className="d-flex justify-content-between align-items-center gap-2"><span className="text-break">{room.name}</span><div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'room', id: room.id, name: room.name, buildingId: room.building_id, originalBuildingId: room.building_id })} aria-label={`Edit room ${room.name}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => requestDelete(`Delete room "${room.name}"? Locations in use cannot be deleted.`, () => deleteLocation('room', room.id))} aria-label={`Delete room ${room.name}`}>Delete</Button></div></ListGroup.Item>)}
               </ListGroup>
             </Col>
             <Col lg={4}>
@@ -341,7 +355,7 @@ function Warehouse() {
                 {containers.filter((container) => container.room_id === manageRoom).map((container) => <ListGroup.Item key={container.id}>
                   <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
                     <span>{container.name} (#{container.number}){!container.type_id && <span className="text-danger"> - Type required</span>}</span>
-                    <div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'container', id: container.id, name: container.name, number: String(container.number), typeId: container.type_id ?? '', buildingId: container.building_id, roomId: container.room_id, originalBuildingId: container.building_id, originalRoomId: container.room_id })} aria-label={`Edit container ${container.number}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteLocation('container', container.id, `container "${container.name}"`)} aria-label={`Delete container ${container.number}`}>Delete</Button></div>
+                    <div className="d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => setEditLocation({ kind: 'container', id: container.id, name: container.name, number: String(container.number), typeId: container.type_id ?? '', buildingId: container.building_id, roomId: container.room_id, originalBuildingId: container.building_id, originalRoomId: container.room_id })} aria-label={`Edit container ${container.number}`}>Edit</Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => requestDelete(`Delete container "${container.name}"? Locations in use cannot be deleted.`, () => deleteLocation('container', container.id))} aria-label={`Delete container ${container.number}`}>Delete</Button></div>
                   </div>
                   <Form.Select aria-label={`Type for container ${container.number}`} value={container.type_id ?? ''} disabled={saving || loadingLists} onChange={(e) => { if (e.target.value) void mutate('warehouse_containers', 'update', { type_id: e.target.value }, container.id) }}>
                     <option value="" disabled>Select a type</option>
@@ -353,6 +367,15 @@ function Warehouse() {
           </Row>
         </Card.Body>
       </Card>
+
+      <ConfirmDeleteModal
+        show={pendingDelete !== null}
+        message={pendingDelete?.message ?? ''}
+        error={error}
+        busy={saving}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void confirmDelete()}
+      />
 
       <Modal show={editLocation !== null} onHide={() => { if (!saving) setEditLocation(null) }} centered>
         <Form onSubmit={saveLocationEdit}>
@@ -450,7 +473,7 @@ function Warehouse() {
                     <td>{names.building.get(item.building_id) ?? 'Unavailable'}</td>
                     <td>{names.room.get(item.room_id) ?? 'Unavailable'}</td>
                     <td>{(() => { const container = names.container.get(item.container_id); return container ? `${container.name} (#${container.number}) - ${container.type_id ? names.type.get(container.type_id) ?? 'Unavailable' : 'Type not assigned'}` : 'Unavailable' })()}</td>
-                    <td><div className="row-actions d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => editItem(item)} aria-label={`Edit ${item.name}`} title="Edit"><PencilIcon /></Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => deleteItem(item)} aria-label={`Delete ${item.name}`} title="Delete"><TrashIcon /></Button></div></td>
+                    <td><div className="row-actions d-flex gap-2"><Button variant="outline-primary" size="sm" disabled={saving} onClick={() => editItem(item)} aria-label={`Edit ${item.name}`} title="Edit"><PencilIcon /></Button><Button variant="outline-danger" size="sm" disabled={saving} onClick={() => requestDelete(`Delete "${item.name}" from the inventory?`, () => deleteItem(item))} aria-label={`Delete ${item.name}`} title="Delete"><TrashIcon /></Button></div></td>
                   </tr>)}</tbody>
                 </Table>
               )}

@@ -1,5 +1,24 @@
 # my-web-app
 
+## Chrome extension data
+
+The Extension Data page lets signed-in users view, edit, and delete their existing
+extension pages, page notes, and reading locations. Sign in with the same
+Supabase account as the extension. Search URLs in any section; the filter
+also applies to notes' associated page URLs. IDs, ownership, and creation timestamps are
+read-only. Page URLs and reading-location URLs are independent; changing one
+does not change the other. The extension matches URLs exactly.
+Each section can be sorted by creation date and time, newest or oldest first.
+The Pages section shows the number of accessible notes for each page.
+Deleting a page may also delete its notes if the database cascades deletions;
+otherwise existing notes may prevent deletion. Reading locations are separate.
+Deletions require confirmation in the app.
+
+This page uses the extension's existing tables and requires authenticated
+select, update, and delete grants and row-level security policies for the user's own
+records, including notes belonging to their pages. No schema changes are
+required if those permissions are already configured.
+
 ## Smoking and alcohol recovery
 
 Signed-in users can track smoking and alcohol recovery independently from the
@@ -31,6 +50,7 @@ container. Existing containers without a type are highlighted for assignment
 in the location manager. A type in use cannot be deleted. Buildings, rooms,
 containers and types can be edited; moving a room or container also moves its
 contents. Database changes show a green success or red failure notification.
+Deletions require confirmation in the app.
 Add inventory to a container with a non-negative whole-number
 quantity. Each inventory entry can optionally have a non-negative whole-number
 item number, which must be unique within the user's warehouse, regardless of
