@@ -410,15 +410,14 @@ export function formatDuration(milliseconds: number) {
 }
 
 export function formatMilestoneAgo(elapsed: number, milestoneHours: number) {
-  const minutes = Math.floor(Math.max(0, elapsed - milestoneHours * millisecondsPerHour) / 60000)
+  const milliseconds = Math.max(0, elapsed - milestoneHours * millisecondsPerHour)
+  if (milliseconds >= millisecondsPerHour) {
+    const hours = Math.round(milliseconds / millisecondsPerHour)
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
+  }
+  const minutes = Math.floor(milliseconds / 60000)
   if (minutes === 0) return 'just now'
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  const parts = [
-    ...(hours ? [`${hours} ${hours === 1 ? 'hour' : 'hours'}`] : []),
-    ...(remainingMinutes ? [`${remainingMinutes} ${remainingMinutes === 1 ? 'minute' : 'minutes'}`] : []),
-  ]
-  return `${parts.join(' ')} ago`
+  return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
 }
 
 export function groupRecoverySteps(steps: RecoveryStep[]) {
